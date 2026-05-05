@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>R-Mind — AI Assistant</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brand:       #c8f135;
+      --brand-dim:   #a8cc20;
+      --bg:          #0c0d0f;
+      --surface:     #131416;
+      --surface2:    #1a1c1f;
+      --surface3:    #222428;
+      --text:        #eef0f2;
+      --muted:       #7a7f88;
+      --border:      #2a2d32;
+      --border2:     #353840;
+      --user-bg:     #c8f135;
+      --user-text:   #0c0d0f;
+      --bot-bg:      #1a1c1f;
+      --radius:      16px;
+    }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Grid background */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(200,241,53,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(200,241,53,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none; z-index: 0;
+    }
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background: radial-gradient(ellipse at 50% 50%, rgba(200,241,53,0.04) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+
+    #app {
+      position: relative; z-index: 1;
+      width: 460px; height: 680px;
+      background: var(--surface);
+      border-radius: 24px;
+      border: 1px solid var(--border2);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 0 0 1px rgba(200,241,53,0.08), 0 32px 80px rgba(0,0,0,0.6);
+      animation: bootUp 0.5s cubic-bezier(0.34,1.4,0.64,1);
+    }
+
+    @keyframes bootUp {
+      from { opacity:0; transform: translateY(24px) scale(0.97); }
+      to   { opacity:1; transform: translateY(0) scale(1); }
+    }
+
+    /* ── Header ── */
+    #header {
+      padding: 16px 20px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 13px;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+    }
+    #header::after {
+      content: '';
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--brand), transparent);
+      opacity: 0.5;
+    }
+
+    .logo {
+      width: 44px; height: 44px;
+      border-radius: 14px;
+      background: var(--brand);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .logo svg { width: 22px; height: 22px; }
+
+    .header-info { flex: 1; }
+    .header-info h1 {
+      font-size: 17px; font-weight: 700; color: var(--text);
+      letter-spacing: -0.5px;
+    }
+    .header-info h1 span { color: var(--brand); }
+    .header-info p {
+      font-size: 11px; color: var(--muted);
+      margin-top: 2px; display: flex; align-items: center; gap: 5px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .pulse {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--brand); animation: blink 2s infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    .ver {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; color: var(--brand);
+      background: rgba(200,241,53,0.1);
+      border: 1px solid rgba(200,241,53,0.2);
+      border-radius: 6px; padding: 3px 9px;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Messages ── */
+    #messages {
+      flex: 1; overflow-y: auto;
+      padding: 18px 16px;
+      display: flex; flex-direction: column; gap: 14px;
+      scroll-behavior: smooth;
+    }
+    #messages::-webkit-scrollbar { width: 3px; }
+    #messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+    .msg-wrap {
+      display: flex; align-items: flex-end; gap: 9px;
+      animation: msgIn 0.2s ease;
+    }
+    .msg-wrap.user { flex-direction: row-reverse; }
+    @keyframes msgIn {
+      from { opacity:0; transform: translateY(10px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+
+    .bot-av {
+      width: 30px; height: 30px; border-radius: 10px;
+      background: var(--brand);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .bot-av svg { width: 16px; height: 16px; }
+
+    .bubble {
+      max-width: 77%;
+      padding: 11px 15px;
+      font-size: 14px; line-height: 1.65;
+      border-radius: var(--radius);
+    }
+    .msg-wrap.bot .bubble {
+      background: var(--bot-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+    .msg-wrap.user .bubble {
+      background: var(--user-bg);
+      color: var(--user-text);
+      font-weight: 500;
+      border-bottom-right-radius: 4px;
+    }
+
+    .ts {
+      font-size: 10px; color: var(--muted);
+      margin-top: 3px; padding: 0 4px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .msg-wrap.user .ts { text-align: right; }
+
+    /* ── Typing ── */
+    .typing-wrap { display: flex; align-items: flex-end; gap: 9px; animation: msgIn 0.2s ease; }
+    .typing-bubble {
+      background: var(--bot-bg); border: 1px solid var(--border);
+      border-radius: var(--radius); border-bottom-left-radius: 4px;
+      padding: 14px 18px; display: flex; gap: 5px; align-items: center;
+    }
+    .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--brand); opacity: 0.7;
+      animation: td 1.2s infinite;
+    }
+    .dot:nth-child(2) { animation-delay:.2s; }
+    .dot:nth-child(3) { animation-delay:.4s; }
+    @keyframes td { 0%,60%,100%{transform:translateY(0);opacity:0.7} 30%{transform:translateY(-7px);opacity:1} }
+
+    /* ── Chips ── */
+    .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 4px; padding-left: 39px; }
+    .chip {
+      padding: 5px 12px; border-radius: 8px; font-size: 12px;
+      font-family: 'Space Grotesk', sans-serif; font-weight: 500;
+      border: 1px solid var(--border2); color: var(--muted);
+      background: var(--surface2); cursor: pointer;
+      transition: all 0.15s; letter-spacing: 0.2px;
+    }
+    .chip:hover { border-color: var(--brand); color: var(--brand); background: rgba(200,241,53,0.06); }
+
+    /* ── Input ── */
+    #input-area {
+      padding: 14px 16px; border-top: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface); flex-shrink: 0;
+    }
+
+    #userInput {
+      flex: 1; padding: 12px 16px; border-radius: 12px;
+      border: 1px solid var(--border2);
+      font-size: 14px; font-family: 'Space Grotesk', sans-serif;
+      background: var(--surface2); color: var(--text); outline: none;
+      transition: border-color 0.2s;
+    }
+    #userInput:focus { border-color: var(--brand); }
+    #userInput::placeholder { color: #3d4148; }
+
+    #sendBtn {
+      width: 42px; height: 42px; border-radius: 12px;
+      background: var(--brand); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: transform 0.15s, opacity 0.15s;
+    }
+    #sendBtn:hover { opacity: 0.85; transform: scale(1.05); }
+    #sendBtn:active { transform: scale(0.95); }
+    #sendBtn svg { width: 17px; height: 17px; fill: #0c0d0f; }
+
+    #footer-note {
+      text-align: center; font-size: 10px; color: #3d4148;
+      padding: 0 0 10px;
+      font-family: 'JetBrains Mono', monospace; letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <div id="header">
+    <div class="logo">
+      <!-- Brain icon -->
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 3C9.5 3 7.5 4.5 7 6.5C5.5 6.8 4 8.2 4 10C4 11.2 4.6 12.2 5.5 12.9C5.2 13.5 5 14.2 5 15C5 17.2 6.8 19 9 19H15C17.2 19 19 17.2 19 15C19 14.2 18.8 13.5 18.5 12.9C19.4 12.2 20 11.2 20 10C20 8.2 18.5 6.8 17 6.5C16.5 4.5 14.5 3 12 3Z" fill="#0c0d0f" stroke="#0c0d0f" stroke-width="0.5"/>
+        <path d="M12 8V16M9 10.5L12 8L15 10.5M9 13.5L12 16L15 13.5" stroke="#c8f135" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="header-info">
+      <h1>R<span>-Mind</span></h1>
+      <p><span class="pulse"></span> system.online · ready</p>
+    </div>
+    <div class="ver">v1.0</div>
+  </div>
+
+  <div id="messages"></div>
+
+  <div id="input-area">
+    <input id="userInput" type="text" placeholder="Enter your query..." autocomplete="off"
+      onkeydown="if(event.key==='Enter') sendMsg()"/>
+    <button id="sendBtn" onclick="sendMsg()">
+      <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+    </button>
+  </div>
+
+  <div id="footer-note">R-MIND · POWERED BY CLAUDE AI</div>
+</div>
+
+<script>
+  // ============================================
+  //   APNI API KEY YAHAN PASTE KARO
+  // ============================================
+  const API_KEY = "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;
+  // ============================================
+
+  const msgsDiv = document.getElementById('messages');
+  const input   = document.getElementById('userInput');
+  const history = [];
+
+  function getTime() {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // Bot avatar SVG
+  const botAvSVG = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 3C9.5 3 7.5 4.5 7 6.5C5.5 6.8 4 8.2 4 10C4 11.2 4.6 12.2 5.5 12.9C5.2 13.5 5 14.2 5 15C5 17.2 6.8 19 9 19H15C17.2 19 19 17.2 19 15C19 14.2 18.8 13.5 18.5 12.9C19.4 12.2 20 11.2 20 10C20 8.2 18.5 6.8 17 6.5C16.5 4.5 14.5 3 12 3Z" fill="#0c0d0f"/>
+    <path d="M12 8V16M9 10.5L12 8L15 10.5M9 13.5L12 16L15 13.5" stroke="#c8f135" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+
+  function addMsg(html, who) {
+    const wrap = document.createElement('div');
+    wrap.className = 'msg-wrap ' + who;
+    if (who === 'bot') {
+      wrap.innerHTML = `
+        <div class="bot-av">${botAvSVG}</div>
+        <div>
+          <div class="bubble">${html}</div>
+          <div class="ts">${getTime()}</div>
+        </div>`;
+    } else {
+      wrap.innerHTML = `
+        <div>
+          <div class="bubble">${html}</div>
+          <div class="ts">${getTime()}</div>
+        </div>`;
+    }
+    msgsDiv.appendChild(wrap);
+    msgsDiv.scrollTop = msgsDiv.scrollHeight;
+  }
+
+  function addChips() {
+    const chips = document.createElement('div');
+    chips.className = 'chips'; chips.id = 'chips';
+    ['What can you do?', 'Write some code', 'Tell me a fact', 'Help me think'].forEach(s => {
+      const btn = document.createElement('button');
+      btn.className = 'chip'; btn.innerText = s;
+      btn.onclick = () => { chips.remove(); quickSend(s); };
+      chips.appendChild(btn);
+    });
+    msgsDiv.appendChild(chips);
+    msgsDiv.scrollTop = msgsDiv.scrollHeight;
+  }
+
+  function showTyping() {
+    const wrap = document.createElement('div');
+    wrap.className = 'typing-wrap'; wrap.id = 'typing';
+    wrap.innerHTML = `
+      <div class="bot-av">${botAvSVG}</div>
+      <div class="typing-bubble">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>`;
+    msgsDiv.appendChild(wrap);
+    msgsDiv.scrollTop = msgsDiv.scrollHeight;
+  }
+
+  function removeTyping() {
+    const t = document.getElementById('typing');
+    if (t) t.remove();
+  }
+
+  async function quickSend(text) {
+    input.value = text;
+    await sendMsg();
+  }
+
+  async function sendMsg() {
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+
+    const c = document.getElementById('chips');
+    if (c) c.remove();
+
+    addMsg(text, 'user');
+    history.push({ role: 'user', content: text });
+    showTyping();
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': API_KEY,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 1000,
+          system: `You are R-Mind — a highly intelligent, sharp, and powerful AI assistant.
+Your personality is calm, precise, and confident — like a genius assistant.
+Respond in clear English. Be concise, smart, and occasionally witty.
+If someone asks who you are, say: "I'm R-Mind — an advanced AI assistant. Ask me anything."
+Use minimal emojis, keep responses clean and sharp.`,
+          messages: history
+        })
+      });
+
+      const data = await res.json();
+      const reply = data.content?.[0]?.text || 'Something went wrong. Please try again.';
+      removeTyping();
+      addMsg(reply, 'bot');
+      history.push({ role: 'assistant', content: reply });
+
+    } catch (err) {
+      removeTyping();
+      addMsg('⚠️ Connection failed. Check your internet or API key.', 'bot');
+    }
+  }
+
+  window.onload = () => {
+    addMsg("Hello. I'm <strong>R-Mind</strong> — your intelligent AI assistant. I think fast, respond sharp, and help with anything. What's on your mind?", 'bot');
+    addChips();
+  };
+</script>
+</body>
+</html>
