@@ -123,9 +123,48 @@
     }
     .bot-av svg { width: 16px; height: 16px; }
 
-    .bubble { max-width: 77%; padding: 11px 15px; font-size: 14px; line-height: 1.65; border-radius: var(--radius); }
-    .msg-wrap.bot .bubble { background: var(--bot-bg); color: var(--text); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
-    .msg-wrap.user .bubble { background: var(--user-bg); color: var(--user-text); font-weight: 500; border-bottom-right-radius: 4px; }
+    .bubble {
+      max-width: 77%; padding: 11px 15px; font-size: 14px;
+      line-height: 1.65; border-radius: var(--radius);
+    }
+    .msg-wrap.bot .bubble {
+      background: var(--bot-bg); color: var(--text);
+      border: 1px solid var(--border); border-bottom-left-radius: 4px;
+    }
+    .msg-wrap.user .bubble {
+      background: var(--user-bg); color: var(--user-text);
+      font-weight: 500; border-bottom-right-radius: 4px;
+    }
+
+    /* Markdown styling inside bubble */
+    .bubble h1,.bubble h2,.bubble h3 {
+      color: var(--brand); margin: 10px 0 5px;
+      font-size: 14px; font-weight: 600;
+    }
+    .bubble p { margin-bottom: 8px; }
+    .bubble p:last-child { margin-bottom: 0; }
+    .bubble ul, .bubble ol { padding-left: 18px; margin-bottom: 8px; }
+    .bubble li { margin-bottom: 4px; }
+    .bubble code {
+      background: #0c0d0f; color: var(--brand);
+      padding: 2px 6px; border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    }
+    .bubble pre {
+      background: #0c0d0f; border: 1px solid var(--border2);
+      border-radius: 8px; padding: 12px; margin: 8px 0;
+      overflow-x: auto;
+    }
+    .bubble pre code {
+      background: none; padding: 0; color: var(--brand);
+      font-size: 12px; line-height: 1.6;
+    }
+    .bubble strong { color: #fff; font-weight: 600; }
+    .bubble hr { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+
+    .msg-wrap.user .bubble h1,
+    .msg-wrap.user .bubble h2,
+    .msg-wrap.user .bubble strong { color: #0c0d0f; }
 
     .ts { font-size: 10px; color: var(--muted); margin-top: 3px; padding: 0 4px; font-family: 'JetBrains Mono', monospace; }
     .msg-wrap.user .ts { text-align: right; }
@@ -214,11 +253,7 @@
 </div>
 
 <script>
-  // ============================================
-  //   APNI GROQ API KEY YAHAN PASTE KARO
-  // ============================================
   const API_KEY = "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";
-  // ============================================
 
   const msgsDiv = document.getElementById('messages');
   const input   = document.getElementById('userInput');
@@ -229,24 +264,46 @@
     <path d="M12 8V16M9 10.5L12 8L15 10.5M9 13.5L12 16L15 13.5" stroke="#c8f135" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`;
 
+  // Simple markdown parser
+  function parseMarkdown(text) {
+    return text
+      .replace(/```(\w+)?\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/^- (.+)$/gm, '<li>$1</li>')
+      .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
+      .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+      .replace(/\n{2,}/g, '</p><p>')
+      .replace(/\n/g, '<br>')
+      .replace(/^(?!<[hupol])(.+)$/gm, '<p>$1</p>')
+      .replace(/<p><\/p>/g, '')
+      .replace(/<p>(<h[123]>)/g, '$1')
+      .replace(/(<\/h[123]>)<\/p>/g, '$1');
+  }
+
   function getTime() {
     return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
-  function addMsg(html, who) {
+  function addMsg(text, who, isHtml = false) {
     const wrap = document.createElement('div');
     wrap.className = 'msg-wrap ' + who;
+    const content = (who === 'bot' && !isHtml) ? parseMarkdown(text) : text;
     if (who === 'bot') {
       wrap.innerHTML = `
         <div class="bot-av">${botAvSVG}</div>
         <div>
-          <div class="bubble">${html}</div>
+          <div class="bubble">${content}</div>
           <div class="ts">${getTime()}</div>
         </div>`;
     } else {
       wrap.innerHTML = `
         <div>
-          <div class="bubble">${html}</div>
+          <div class="bubble">${text}</div>
           <div class="ts">${getTime()}</div>
         </div>`;
     }
@@ -314,15 +371,15 @@
           messages: [
             {
               role: 'system',
-              content: content: `You are R-Mind — a highly intelligent AI assistant created by Rehan.
-Always format your responses clearly:
-- Use bullet points or numbered steps when explaining things
-- Use code blocks with triple backticks for any code
-- Break long answers into small paragraphs
-- Use headings like "## Step 1" when giving multi-step answers
-- Never dump everything in one paragraph
-- Be concise, clear and easy to understand
-If someone asks who made you, say: "I was created by Rehan — a brilliant developer!"`
+              content: `You are R-Mind, a smart AI assistant created by Rehan.
+Format every response clearly like ChatGPT:
+- Use bullet points or numbered steps for lists
+- Use headings (##) for sections
+- Use code blocks for any code
+- Break answers into short paragraphs
+- Never write a wall of text
+- Be concise and easy to read
+If asked who made you: "I was created by Rehan — a brilliant developer!"`
             },
             ...history
           ]
@@ -349,7 +406,7 @@ If someone asks who made you, say: "I was created by Rehan — a brilliant devel
   }
 
   window.onload = () => {
-    addMsg("Hello. I'm <strong>R-Mind</strong> — your intelligent AI assistant, created by <strong>Rehan</strong>. I think fast, respond sharp, and help with anything. What's on your mind?", 'bot');
+    addMsg("Hello! I'm <strong>R-Mind</strong> — your intelligent AI assistant, created by <strong>Rehan</strong>. Ask me anything!", 'bot', true);
     addChips();
   };
 </script>
