@@ -7,286 +7,535 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --brand:     #c8f135;
-      --bg:        #0c0d0f;
-      --surface:   #131416;
-      --surface2:  #1a1c1f;
-      --text:      #eef0f2;
-      --muted:     #7a7f88;
-      --border:    #2a2d32;
-      --border2:   #353840;
-      --user-bg:   #c8f135;
-      --user-text: #0c0d0f;
-      --bot-bg:    #1a1c1f;
-      --radius:    16px;
+      --brand: #c8f135; --bg: #0c0d0f; --surface: #131416; --surface2: #1a1c1f;
+      --surface3: #222428; --text: #eef0f2; --muted: #7a7f88; --border: #2a2d32;
+      --border2: #353840; --user-bg: #c8f135; --user-text: #0c0d0f;
+      --bot-bg: #1a1c1f; --radius: 16px; --sidebar-w: 260px;
     }
+    body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); height: 100vh; display: flex; overflow: hidden; }
+    body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(200,241,53,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(200,241,53,0.02) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: 0; }
 
-    body {
-      font-family: 'Space Grotesk', sans-serif;
-      background: var(--bg);
-      min-height: 100vh;
-      display: flex; align-items: center; justify-content: center;
-      overflow: hidden;
+    /* ── SIDEBAR ── */
+    #sidebar {
+      width: var(--sidebar-w); height: 100vh; background: var(--surface);
+      border-right: 1px solid var(--border); display: flex; flex-direction: column;
+      flex-shrink: 0; transition: transform 0.3s cubic-bezier(0.4,0,0.2,1), width 0.3s;
+      position: relative; z-index: 10; overflow: hidden;
     }
+    #sidebar.collapsed { width: 0; transform: translateX(-100%); }
 
-    body::before {
-      content: '';
-      position: fixed; inset: 0;
-      background-image:
-        linear-gradient(rgba(200,241,53,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(200,241,53,0.03) 1px, transparent 1px);
-      background-size: 40px 40px;
-      pointer-events: none; z-index: 0;
-    }
-    body::after {
-      content: '';
-      position: fixed; inset: 0;
-      background: radial-gradient(ellipse at 50% 50%, rgba(200,241,53,0.04) 0%, transparent 70%);
-      pointer-events: none; z-index: 0;
-    }
+    .sb-top { padding: 14px 14px 10px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .sb-logo { width: 32px; height: 32px; border-radius: 9px; background: var(--brand); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .sb-logo svg { width: 17px; height: 17px; }
+    .sb-title { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+    .sb-title span { color: var(--brand); }
 
-    #app {
-      position: relative; z-index: 1;
-      width: 460px; height: 680px;
-      background: var(--surface);
-      border-radius: 24px;
-      border: 1px solid var(--border2);
-      display: flex; flex-direction: column;
-      overflow: hidden;
-      box-shadow: 0 0 0 1px rgba(200,241,53,0.08), 0 32px 80px rgba(0,0,0,0.6);
-      animation: bootUp 0.5s cubic-bezier(0.34,1.4,0.64,1);
+    .sb-new-chat {
+      margin: 12px; padding: 10px 14px; border-radius: 10px;
+      background: var(--brand); color: #0c0d0f; font-size: 13px; font-weight: 600;
+      border: none; cursor: pointer; display: flex; align-items: center; gap: 8px;
+      font-family: 'Space Grotesk', sans-serif; transition: opacity 0.15s; flex-shrink: 0;
     }
+    .sb-new-chat:hover { opacity: 0.85; }
 
-    @keyframes bootUp {
-      from { opacity:0; transform: translateY(24px) scale(0.97); }
-      to   { opacity:1; transform: translateY(0) scale(1); }
+    .sb-search { margin: 0 12px 10px; position: relative; flex-shrink: 0; }
+    .sb-search input { width: 100%; padding: 9px 12px 9px 34px; border-radius: 9px; border: 1px solid var(--border2); background: var(--surface2); color: var(--text); font-size: 13px; font-family: 'Space Grotesk', sans-serif; outline: none; }
+    .sb-search input:focus { border-color: var(--brand); }
+    .sb-search input::placeholder { color: #3d4148; }
+    .sb-search .s-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); width: 15px; height: 15px; }
+
+    .sb-section { padding: 0 12px; margin-bottom: 4px; flex-shrink: 0; }
+    .sb-section-title { font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; padding: 6px 4px 4px; font-family: 'JetBrains Mono', monospace; }
+
+    .sb-nav { display: flex; flex-direction: column; gap: 2px; padding: 0 10px; flex-shrink: 0; }
+    .sb-nav-item {
+      display: flex; align-items: center; gap: 10px; padding: 9px 10px;
+      border-radius: 9px; cursor: pointer; color: var(--muted); font-size: 13px;
+      font-weight: 500; transition: all 0.15s; border: 1px solid transparent;
     }
+    .sb-nav-item:hover { background: var(--surface2); color: var(--text); }
+    .sb-nav-item.active { background: rgba(200,241,53,0.1); color: var(--brand); border-color: rgba(200,241,53,0.2); }
+    .sb-nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .sb-nav-item .badge { margin-left: auto; background: var(--brand); color: #0c0d0f; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; font-family: 'JetBrains Mono', monospace; }
 
-    #header {
-      padding: 16px 20px;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; gap: 13px;
-      flex-shrink: 0; position: relative; overflow: hidden;
+    .sb-chats { flex: 1; overflow-y: auto; padding: 0 10px 10px; }
+    .sb-chats::-webkit-scrollbar { width: 3px; }
+    .sb-chats::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+    .chat-item {
+      display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+      border-radius: 9px; cursor: pointer; color: var(--muted); font-size: 13px;
+      transition: all 0.15s; border: 1px solid transparent;
     }
-    #header::after {
-      content: '';
-      position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
-      background: linear-gradient(90deg, transparent, var(--brand), transparent);
-      opacity: 0.5;
+    .chat-item:hover { background: var(--surface2); color: var(--text); }
+    .chat-item.active-chat { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+    .chat-item svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .chat-item-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .chat-item-del { opacity: 0; width: 18px; height: 18px; border-radius: 4px; background: none; border: none; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .chat-item:hover .chat-item-del { opacity: 1; }
+    .chat-item-del:hover { color: #ff4444; }
+
+    .sb-bottom { padding: 10px; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .sb-customize {
+      display: flex; align-items: center; gap: 9px; padding: 9px 10px;
+      border-radius: 9px; cursor: pointer; color: var(--muted); font-size: 13px;
+      font-weight: 500; transition: all 0.15s;
     }
+    .sb-customize:hover { background: var(--surface2); color: var(--text); }
+    .sb-customize svg { width: 16px; height: 16px; }
 
-    .logo {
-      width: 44px; height: 44px; border-radius: 14px;
-      background: var(--brand);
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
-    .logo svg { width: 22px; height: 22px; }
+    /* ── MAIN ── */
+    #main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; z-index: 1; }
 
-    .header-info { flex: 1; }
-    .header-info h1 { font-size: 17px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; }
-    .header-info h1 span { color: var(--brand); }
-    .header-info p { font-size: 11px; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 5px; font-family: 'JetBrains Mono', monospace; }
+    /* Top bar */
+    #topbar { padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; flex-shrink: 0; position: relative; }
+    #topbar::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--brand), transparent); opacity: 0.4; }
 
-    .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); animation: blink 2s infinite; }
+    #toggleSidebar { width: 34px; height: 34px; border-radius: 9px; background: var(--surface2); border: 1px solid var(--border2); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--muted); transition: all 0.15s; flex-shrink: 0; }
+    #toggleSidebar:hover { border-color: var(--brand); color: var(--brand); }
+    #toggleSidebar svg { width: 16px; height: 16px; }
+
+    .topbar-title { flex: 1; }
+    .topbar-title h2 { font-size: 15px; font-weight: 600; color: var(--text); }
+    .topbar-title p { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; display: flex; align-items: center; gap: 5px; margin-top: 1px; }
+    .pulse { width: 5px; height: 5px; border-radius: 50%; background: var(--brand); animation: blink 2s infinite; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-    .ver {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px; color: var(--brand);
-      background: rgba(200,241,53,0.1);
-      border: 1px solid rgba(200,241,53,0.2);
-      border-radius: 6px; padding: 3px 9px; letter-spacing: 0.5px;
-    }
+    .ver { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--brand); background: rgba(200,241,53,0.1); border: 1px solid rgba(200,241,53,0.2); border-radius: 6px; padding: 3px 8px; }
 
-    #messages {
-      flex: 1; overflow-y: auto;
-      padding: 18px 16px;
-      display: flex; flex-direction: column; gap: 14px;
-      scroll-behavior: smooth;
-    }
+    /* Content panels */
+    #content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* CHAT PANEL */
+    #chat-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    #messages { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
     #messages::-webkit-scrollbar { width: 3px; }
     #messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
 
-    .msg-wrap { display: flex; align-items: flex-end; gap: 9px; animation: msgIn 0.2s ease; }
+    .msg-wrap { display: flex; align-items: flex-end; gap: 8px; animation: msgIn 0.2s ease; }
     .msg-wrap.user { flex-direction: row-reverse; }
     @keyframes msgIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
 
-    .bot-av {
-      width: 30px; height: 30px; border-radius: 10px;
-      background: var(--brand);
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
-    .bot-av svg { width: 16px; height: 16px; }
+    .bot-av { width: 28px; height: 28px; border-radius: 9px; background: var(--brand); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .bot-av svg { width: 15px; height: 15px; }
 
-    .bubble {
-      max-width: 77%; padding: 11px 15px; font-size: 14px;
-      line-height: 1.65; border-radius: var(--radius);
-    }
-    .msg-wrap.bot .bubble {
-      background: var(--bot-bg); color: var(--text);
-      border: 1px solid var(--border); border-bottom-left-radius: 4px;
-    }
-    .msg-wrap.user .bubble {
-      background: var(--user-bg); color: var(--user-text);
-      font-weight: 500; border-bottom-right-radius: 4px;
-    }
+    .bubble { max-width: 75%; padding: 10px 14px; font-size: 14px; line-height: 1.65; border-radius: var(--radius); }
+    .msg-wrap.bot .bubble { background: var(--bot-bg); color: var(--text); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+    .msg-wrap.user .bubble { background: var(--user-bg); color: var(--user-text); font-weight: 500; border-bottom-right-radius: 4px; }
 
-    /* Markdown styling inside bubble */
-    .bubble h1,.bubble h2,.bubble h3 {
-      color: var(--brand); margin: 10px 0 5px;
-      font-size: 14px; font-weight: 600;
-    }
-    .bubble p { margin-bottom: 8px; }
-    .bubble p:last-child { margin-bottom: 0; }
-    .bubble ul, .bubble ol { padding-left: 18px; margin-bottom: 8px; }
-    .bubble li { margin-bottom: 4px; }
-    .bubble code {
-      background: #0c0d0f; color: var(--brand);
-      padding: 2px 6px; border-radius: 4px;
-      font-family: 'JetBrains Mono', monospace; font-size: 12px;
-    }
-    .bubble pre {
-      background: #0c0d0f; border: 1px solid var(--border2);
-      border-radius: 8px; padding: 12px; margin: 8px 0;
-      overflow-x: auto;
-    }
-    .bubble pre code {
-      background: none; padding: 0; color: var(--brand);
-      font-size: 12px; line-height: 1.6;
-    }
+    .bubble h1,.bubble h2,.bubble h3 { color: var(--brand); margin: 10px 0 5px; font-size: 14px; font-weight: 600; }
+    .bubble p { margin-bottom: 7px; } .bubble p:last-child { margin-bottom: 0; }
+    .bubble ul,.bubble ol { padding-left: 18px; margin-bottom: 7px; } .bubble li { margin-bottom: 3px; }
+    .bubble code { background: #0c0d0f; color: var(--brand); padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+    .bubble pre { background: #0c0d0f; border: 1px solid var(--border2); border-radius: 8px; padding: 12px; margin: 8px 0; overflow-x: auto; position: relative; }
+    .bubble pre code { background: none; padding: 0; color: var(--brand); font-size: 12px; line-height: 1.6; }
+    .copy-btn { position: absolute; top: 8px; right: 8px; background: var(--surface3); border: 1px solid var(--border2); color: var(--muted); border-radius: 6px; padding: 3px 8px; font-size: 11px; cursor: pointer; font-family: 'JetBrains Mono', monospace; }
+    .copy-btn:hover { color: var(--brand); border-color: var(--brand); }
     .bubble strong { color: #fff; font-weight: 600; }
-    .bubble hr { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
-
-    .msg-wrap.user .bubble h1,
-    .msg-wrap.user .bubble h2,
     .msg-wrap.user .bubble strong { color: #0c0d0f; }
+    .user-img { max-width: 200px; border-radius: 12px; display: block; margin-bottom: 6px; }
 
     .ts { font-size: 10px; color: var(--muted); margin-top: 3px; padding: 0 4px; font-family: 'JetBrains Mono', monospace; }
     .msg-wrap.user .ts { text-align: right; }
 
-    .typing-wrap { display: flex; align-items: flex-end; gap: 9px; animation: msgIn 0.2s ease; }
-    .typing-bubble {
-      background: var(--bot-bg); border: 1px solid var(--border);
-      border-radius: var(--radius); border-bottom-left-radius: 4px;
-      padding: 14px 18px; display: flex; gap: 5px; align-items: center;
-    }
+    .typing-wrap { display: flex; align-items: flex-end; gap: 8px; animation: msgIn 0.2s ease; }
+    .typing-bubble { background: var(--bot-bg); border: 1px solid var(--border); border-radius: var(--radius); border-bottom-left-radius: 4px; padding: 13px 16px; display: flex; gap: 5px; align-items: center; }
     .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); opacity: 0.7; animation: td 1.2s infinite; }
     .dot:nth-child(2){animation-delay:.2s} .dot:nth-child(3){animation-delay:.4s}
     @keyframes td { 0%,60%,100%{transform:translateY(0);opacity:0.7} 30%{transform:translateY(-7px);opacity:1} }
 
-    .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 4px; padding-left: 39px; }
-    .chip {
-      padding: 5px 12px; border-radius: 8px; font-size: 12px;
-      font-family: 'Space Grotesk', sans-serif; font-weight: 500;
-      border: 1px solid var(--border2); color: var(--muted);
-      background: var(--surface2); cursor: pointer; transition: all 0.15s;
-    }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; padding-left: 36px; }
+    .chip { padding: 5px 11px; border-radius: 8px; font-size: 12px; font-family: 'Space Grotesk', sans-serif; font-weight: 500; border: 1px solid var(--border2); color: var(--muted); background: var(--surface2); cursor: pointer; transition: all 0.15s; }
     .chip:hover { border-color: var(--brand); color: var(--brand); background: rgba(200,241,53,0.06); }
 
-    #input-area {
-      padding: 14px 16px; border-top: 1px solid var(--border);
-      display: flex; align-items: center; gap: 10px;
-      background: var(--surface); flex-shrink: 0;
-    }
+    /* Preview bar */
+    #preview-bar { display: none; padding: 8px 14px; background: var(--surface2); border-top: 1px solid var(--border); align-items: center; gap: 10px; }
+    #preview-bar.show { display: flex; }
+    #preview-thumb { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border2); }
+    #preview-name { flex: 1; font-size: 12px; color: var(--muted); font-family: 'JetBrains Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #preview-remove { width: 24px; height: 24px; border-radius: 50%; background: #333; border: none; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    #preview-remove:hover { background: #ff4444; color: #fff; }
 
-    #userInput {
-      flex: 1; padding: 12px 16px; border-radius: 12px;
-      border: 1px solid var(--border2);
-      font-size: 14px; font-family: 'Space Grotesk', sans-serif;
-      background: var(--surface2); color: var(--text); outline: none;
-      transition: border-color 0.2s;
-    }
+    /* Input */
+    #input-area { padding: 10px 16px 14px; background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0; }
+    #input-row { display: flex; align-items: center; gap: 8px; }
+    .icon-btn { width: 36px; height: 36px; border-radius: 9px; background: var(--surface2); border: 1px solid var(--border2); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; color: var(--muted); }
+    .icon-btn:hover { border-color: var(--brand); color: var(--brand); background: rgba(200,241,53,0.06); }
+    .icon-btn svg { width: 16px; height: 16px; }
+    .icon-btn.recording { border-color: #ff4444; color: #ff4444; animation: recPulse 1s infinite; }
+    @keyframes recPulse { 0%,100%{background:var(--surface2)} 50%{background:rgba(255,68,68,0.15)} }
+
+    #userInput { flex: 1; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border2); font-size: 14px; font-family: 'Space Grotesk', sans-serif; background: var(--surface2); color: var(--text); outline: none; transition: border-color 0.2s; }
     #userInput:focus { border-color: var(--brand); }
     #userInput::placeholder { color: #3d4148; }
 
-    #sendBtn {
-      width: 42px; height: 42px; border-radius: 12px;
-      background: var(--brand); border: none; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; transition: transform 0.15s, opacity 0.15s;
-    }
+    #sendBtn { width: 38px; height: 38px; border-radius: 10px; background: var(--brand); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: transform 0.15s, opacity 0.15s; }
     #sendBtn:hover { opacity: 0.85; transform: scale(1.05); }
-    #sendBtn:active { transform: scale(0.95); }
-    #sendBtn svg { width: 17px; height: 17px; fill: #0c0d0f; }
+    #sendBtn svg { width: 15px; height: 15px; fill: #0c0d0f; }
+    #footer-note { text-align: center; font-size: 10px; color: #2a2d32; margin-top: 6px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.5px; }
+    #footer-note span { color: rgba(200,241,53,0.4); }
 
-    #footer-note {
-      text-align: center; font-size: 10px; color: #3d4148;
-      padding: 0 0 10px;
-      font-family: 'JetBrains Mono', monospace; letter-spacing: 0.5px;
-    }
-    #footer-note span { color: var(--brand); }
+    /* ── OTHER PANELS ── */
+    .panel { flex: 1; display: none; flex-direction: column; overflow: hidden; }
+    .panel.active { display: flex; }
+    .panel-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .panel-header h2 { font-size: 18px; font-weight: 700; color: var(--text); }
+    .panel-header p { font-size: 13px; color: var(--muted); margin-top: 4px; }
+    .panel-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
+    .panel-body::-webkit-scrollbar { width: 3px; }
+    .panel-body::-webkit-scrollbar-thumb { background: var(--border2); }
+
+    /* Search panel */
+    .search-input-wrap { position: relative; margin-bottom: 16px; }
+    .search-input-wrap input { width: 100%; padding: 12px 16px 12px 40px; border-radius: 12px; border: 1px solid var(--border2); background: var(--surface2); color: var(--text); font-size: 14px; font-family: 'Space Grotesk', sans-serif; outline: none; }
+    .search-input-wrap input:focus { border-color: var(--brand); }
+    .search-input-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); width: 18px; height: 18px; }
+    .search-result { padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface2); margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
+    .search-result:hover { border-color: var(--brand); }
+    .search-result h4 { font-size: 13px; color: var(--text); font-weight: 500; margin-bottom: 3px; }
+    .search-result p { font-size: 12px; color: var(--muted); }
+
+    /* Projects panel */
+    .project-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .project-card { padding: 16px; border-radius: 12px; border: 1px solid var(--border2); background: var(--surface2); cursor: pointer; transition: all 0.15s; }
+    .project-card:hover { border-color: var(--brand); background: rgba(200,241,53,0.04); }
+    .project-card .pc-icon { font-size: 24px; margin-bottom: 10px; }
+    .project-card h4 { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .project-card p { font-size: 11px; color: var(--muted); }
+    .project-card .pc-count { font-size: 10px; color: var(--brand); font-family: 'JetBrains Mono', monospace; margin-top: 8px; }
+    .add-project { width: 100%; padding: 12px; border-radius: 10px; border: 1px dashed var(--border2); background: none; color: var(--muted); font-size: 13px; font-family: 'Space Grotesk', sans-serif; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.15s; }
+    .add-project:hover { border-color: var(--brand); color: var(--brand); }
+
+    /* Artifacts panel */
+    .artifact-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface2); margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
+    .artifact-item:hover { border-color: var(--brand); }
+    .artifact-icon { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .artifact-icon.doc { background: rgba(59,130,246,0.15); }
+    .artifact-icon.code { background: rgba(200,241,53,0.1); }
+    .artifact-icon.img { background: rgba(168,85,247,0.15); }
+    .artifact-info { flex: 1; min-width: 0; }
+    .artifact-info h4 { font-size: 13px; font-weight: 500; color: var(--text); }
+    .artifact-info p { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .artifact-date { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
+
+    /* Code panel */
+    .code-editor { background: #0c0d0f; border: 1px solid var(--border2); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+    .code-editor-header { padding: 10px 16px; background: var(--surface2); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    .code-editor-header span { font-size: 12px; color: var(--muted); font-family: 'JetBrains Mono', monospace; flex: 1; }
+    .code-run-btn { padding: 5px 14px; border-radius: 6px; background: var(--brand); border: none; color: #0c0d0f; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Space Grotesk', sans-serif; }
+    .code-copy-btn { padding: 5px 14px; border-radius: 6px; background: var(--surface3); border: 1px solid var(--border2); color: var(--muted); font-size: 12px; cursor: pointer; font-family: 'Space Grotesk', sans-serif; }
+    .code-copy-btn:hover { color: var(--brand); border-color: var(--brand); }
+    #codeTextarea { width: 100%; min-height: 200px; padding: 16px; background: #0c0d0f; border: none; color: var(--brand); font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.6; outline: none; resize: vertical; }
+    #codeOutput { padding: 14px 16px; background: var(--surface2); border-top: 1px solid var(--border); font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5ef08a; min-height: 50px; white-space: pre-wrap; }
+
+    /* Customize panel */
+    .customize-section { margin-bottom: 24px; }
+    .customize-section h3 { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .color-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .color-opt { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.15s; }
+    .color-opt:hover,.color-opt.selected { border-color: #fff; transform: scale(1.1); }
+    .name-input { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border2); background: var(--surface2); color: var(--text); font-size: 14px; font-family: 'Space Grotesk', sans-serif; outline: none; margin-bottom: 8px; }
+    .name-input:focus { border-color: var(--brand); }
+    .save-btn { padding: 10px 22px; border-radius: 10px; background: var(--brand); border: none; color: #0c0d0f; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Space Grotesk', sans-serif; }
+    .save-btn:hover { opacity: 0.85; }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .toggle-row label { font-size: 13px; color: var(--text); }
+    .toggle { width: 38px; height: 22px; border-radius: 11px; background: var(--border2); border: none; cursor: pointer; position: relative; transition: background 0.2s; }
+    .toggle.on { background: var(--brand); }
+    .toggle::after { content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: transform 0.2s; }
+    .toggle.on::after { transform: translateX(16px); }
+
+    /* Camera modal */
+    #camera-modal { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
+    #camera-modal.show { display: flex; }
+    .cam-box { background: var(--surface); border-radius: 20px; border: 1px solid var(--border2); padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 14px; width: 340px; }
+    .cam-box h3 { color: var(--text); font-size: 15px; }
+    #camVideo { width: 300px; height: 220px; border-radius: 12px; background: #000; object-fit: cover; border: 1px solid var(--border2); }
+    .cam-btns { display: flex; gap: 10px; }
+    .cam-btn { padding: 9px 20px; border-radius: 10px; font-size: 13px; font-family: 'Space Grotesk', sans-serif; font-weight: 500; cursor: pointer; border: none; }
+    .cam-btn.capture { background: var(--brand); color: #0c0d0f; }
+    .cam-btn.cancel { background: var(--surface2); color: var(--muted); border: 1px solid var(--border2); }
+
+    /* Overlay for mobile sidebar */
+    #sb-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9; }
+    #sb-overlay.show { display: block; }
+
+    #fileInput { display: none; }
   </style>
 </head>
 <body>
-<div id="app">
 
-  <div id="header">
-    <div class="logo">
+<!-- Sidebar -->
+<div id="sidebar">
+  <div class="sb-top">
+    <div class="sb-logo">
       <svg viewBox="0 0 24 24" fill="none">
         <path d="M12 3C9.5 3 7.5 4.5 7 6.5C5.5 6.8 4 8.2 4 10C4 11.2 4.6 12.2 5.5 12.9C5.2 13.5 5 14.2 5 15C5 17.2 6.8 19 9 19H15C17.2 19 19 17.2 19 15C19 14.2 18.8 13.5 18.5 12.9C19.4 12.2 20 11.2 20 10C20 8.2 18.5 6.8 17 6.5C16.5 4.5 14.5 3 12 3Z" fill="#0c0d0f"/>
         <path d="M12 8V16M9 10.5L12 8L15 10.5M9 13.5L12 16L15 13.5" stroke="#c8f135" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
-    <div class="header-info">
-      <h1>R<span>-Mind</span></h1>
-      <p><span class="pulse"></span> system.online · ready</p>
+    <span class="sb-title">R<span>-Mind</span></span>
+  </div>
+
+  <button class="sb-new-chat" onclick="newChat()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    New Chat
+  </button>
+
+  <div class="sb-search">
+    <svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" placeholder="Search chats..." oninput="searchChats(this.value)" id="chatSearchInput"/>
+  </div>
+
+  <div class="sb-nav">
+    <div class="sb-nav-item active" onclick="showPanel('chat')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Chats
     </div>
-    <div class="ver">v1.0</div>
+    <div class="sb-nav-item" onclick="showPanel('projects')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      Projects
+    </div>
+    <div class="sb-nav-item" onclick="showPanel('artifacts')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+      Artifacts
+      <span class="badge" id="artifactBadge">0</span>
+    </div>
+    <div class="sb-nav-item" onclick="showPanel('code')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      Code
+    </div>
+    <div class="sb-nav-item" onclick="showPanel('search')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Search
+    </div>
   </div>
 
-  <div id="messages"></div>
-
-  <div id="input-area">
-    <input id="userInput" type="text" placeholder="Enter your query..." autocomplete="off"
-      onkeydown="if(event.key==='Enter') sendMsg()"/>
-    <button id="sendBtn" onclick="sendMsg()">
-      <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
-    </button>
+  <div class="sb-section">
+    <div class="sb-section-title">Recent Chats</div>
   </div>
+  <div class="sb-chats" id="chatList"></div>
 
-  <div id="footer-note">R-MIND · CREATED BY <span>REHAN</span></div>
+  <div class="sb-bottom">
+    <div class="sb-customize" onclick="showPanel('customize')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+      Customize
+    </div>
+  </div>
 </div>
+
+<div id="sb-overlay" onclick="closeSidebar()"></div>
+
+<!-- Main -->
+<div id="main">
+  <div id="topbar">
+    <button id="toggleSidebar" onclick="toggleSidebar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="topbar-title">
+      <h2 id="topTitle">R-Mind</h2>
+      <p><span class="pulse"></span> <span id="topSub">online · ready</span></p>
+    </div>
+    <div class="ver">v3.0</div>
+  </div>
+
+  <div id="content">
+
+    <!-- CHAT PANEL -->
+    <div id="panel-chat" class="panel active" style="display:flex;flex-direction:column;">
+      <div id="messages"></div>
+      <div id="preview-bar">
+        <img id="preview-thumb" src="" alt=""/>
+        <span id="preview-name">image.jpg</span>
+        <button id="preview-remove" onclick="removeImage()">✕</button>
+      </div>
+      <div id="input-area">
+        <div id="input-row">
+          <button class="icon-btn" onclick="document.getElementById('fileInput').click()" title="Upload image">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          </button>
+          <button class="icon-btn" onclick="openCamera()" title="Camera">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </button>
+          <button class="icon-btn" id="micBtn" onclick="toggleVoice()" title="Voice">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+          <input id="userInput" type="text" placeholder="Type anything..." autocomplete="off" onkeydown="if(event.key==='Enter') sendMsg()"/>
+          <button id="sendBtn" onclick="sendMsg()">
+            <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+          </button>
+        </div>
+        <div id="footer-note">R-MIND v3.0 · CREATED BY <span>REHAN</span></div>
+      </div>
+    </div>
+
+    <!-- SEARCH PANEL -->
+    <div id="panel-search" class="panel">
+      <div class="panel-header"><h2>🔍 Search</h2><p>Search through your conversations</p></div>
+      <div class="panel-body">
+        <div class="search-input-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" placeholder="Search in conversations..." oninput="searchMessages(this.value)" id="msgSearchInput"/>
+        </div>
+        <div id="searchResults"></div>
+      </div>
+    </div>
+
+    <!-- PROJECTS PANEL -->
+    <div id="panel-projects" class="panel">
+      <div class="panel-header"><h2>📁 Projects</h2><p>Organize your work into projects</p></div>
+      <div class="panel-body">
+        <div class="project-grid" id="projectGrid"></div>
+        <button class="add-project" onclick="addProject()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Project
+        </button>
+      </div>
+    </div>
+
+    <!-- ARTIFACTS PANEL -->
+    <div id="panel-artifacts" class="panel">
+      <div class="panel-header"><h2>📎 Artifacts</h2><p>Saved files, documents and outputs</p></div>
+      <div class="panel-body" id="artifactList"></div>
+    </div>
+
+    <!-- CODE PANEL -->
+    <div id="panel-code" class="panel">
+      <div class="panel-header"><h2>💻 Code Editor</h2><p>Write and run code snippets</p></div>
+      <div class="panel-body">
+        <div class="code-editor">
+          <div class="code-editor-header">
+            <span>JavaScript</span>
+            <button class="code-copy-btn" onclick="copyCode()">Copy</button>
+            <button class="code-run-btn" onclick="runCode()">▶ Run</button>
+          </div>
+          <textarea id="codeTextarea" spellcheck="false">// Write your code here
+console.log("Hello from R-Mind!");</textarea>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-family:'JetBrains Mono',monospace;">Output:</div>
+        <div id="codeOutput">// Output will appear here...</div>
+        <div style="margin-top:16px">
+          <button class="save-btn" onclick="saveCodeAsArtifact()">💾 Save as Artifact</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CUSTOMIZE PANEL -->
+    <div id="panel-customize" class="panel">
+      <div class="panel-header"><h2>⚙️ Customize</h2><p>Personalize your R-Mind experience</p></div>
+      <div class="panel-body">
+        <div class="customize-section">
+          <h3>Bot Name</h3>
+          <input class="name-input" type="text" id="botNameInput" placeholder="R-Mind" value="R-Mind"/>
+          <button class="save-btn" onclick="saveBotName()">Save Name</button>
+        </div>
+        <div class="customize-section">
+          <h3>Accent Color</h3>
+          <div class="color-row">
+            <div class="color-opt selected" style="background:#c8f135" onclick="setColor('#c8f135','#0c0d0f',this)" title="Neon Green"></div>
+            <div class="color-opt" style="background:#7F77DD" onclick="setColor('#7F77DD','#fff',this)" title="Purple"></div>
+            <div class="color-opt" style="background:#1D9E75" onclick="setColor('#1D9E75','#fff',this)" title="Teal"></div>
+            <div class="color-opt" style="background:#EF9F27" onclick="setColor('#EF9F27','#0c0d0f',this)" title="Orange"></div>
+            <div class="color-opt" style="background:#ef4444" onclick="setColor('#ef4444','#fff',this)" title="Red"></div>
+            <div class="color-opt" style="background:#3b82f6" onclick="setColor('#3b82f6','#fff',this)" title="Blue"></div>
+          </div>
+        </div>
+        <div class="customize-section">
+          <h3>Settings</h3>
+          <div class="toggle-row">
+            <label>Sound notifications</label>
+            <button class="toggle" id="soundToggle" onclick="this.classList.toggle('on')"></button>
+          </div>
+          <div class="toggle-row">
+            <label>Auto-save artifacts</label>
+            <button class="toggle on" id="autoSaveToggle" onclick="this.classList.toggle('on')"></button>
+          </div>
+          <div class="toggle-row">
+            <label>Compact messages</label>
+            <button class="toggle" id="compactToggle" onclick="this.classList.toggle('on');toggleCompact()"></button>
+          </div>
+        </div>
+        <div class="customize-section">
+          <h3>Danger Zone</h3>
+          <button class="save-btn" style="background:#ef4444" onclick="clearAllChats()">🗑️ Clear All Chats</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Camera Modal -->
+<div id="camera-modal">
+  <div class="cam-box">
+    <h3>📷 Take a Photo</h3>
+    <video id="camVideo" autoplay playsinline></video>
+    <div class="cam-btns">
+      <button class="cam-btn capture" onclick="capturePhoto()">📸 Capture</button>
+      <button class="cam-btn cancel" onclick="closeCamera()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept="image/*" onchange="handleFileUpload(event)"/>
+<canvas id="snapCanvas" style="display:none"></canvas>
 
 <script>
   const API_KEY = "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";
 
+  // State
+  let chats = JSON.parse(localStorage.getItem('rmind-chats') || '[]');
+  let currentChatId = null;
+  let pendingImageBase64 = null;
+  let cameraStream = null;
+  let recognition = null;
+  let isRecording = false;
+  let artifacts = JSON.parse(localStorage.getItem('rmind-artifacts') || '[]');
+  let projects = JSON.parse(localStorage.getItem('rmind-projects') || '[]');
+  let botName = localStorage.getItem('rmind-botname') || 'R-Mind';
+  let accentColor = localStorage.getItem('rmind-accent') || '#c8f135';
+  let accentText = localStorage.getItem('rmind-accent-text') || '#0c0d0f';
+
   const msgsDiv = document.getElementById('messages');
-  const input   = document.getElementById('userInput');
-  const history = [];
+  const inputEl = document.getElementById('userInput');
 
   const botAvSVG = `<svg viewBox="0 0 24 24" fill="none">
     <path d="M12 3C9.5 3 7.5 4.5 7 6.5C5.5 6.8 4 8.2 4 10C4 11.2 4.6 12.2 5.5 12.9C5.2 13.5 5 14.2 5 15C5 17.2 6.8 19 9 19H15C17.2 19 19 17.2 19 15C19 14.2 18.8 13.5 18.5 12.9C19.4 12.2 20 11.2 20 10C20 8.2 18.5 6.8 17 6.5C16.5 4.5 14.5 3 12 3Z" fill="#0c0d0f"/>
-    <path d="M12 8V16M9 10.5L12 8L15 10.5M9 13.5L12 16L15 13.5" stroke="#c8f135" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M12 8V16M9 10.5L12 8L15 10.5M9 13.5L12 16L15 13.5" stroke="${accentColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`;
 
-  // Simple markdown parser
+  // Apply saved color
+  document.documentElement.style.setProperty('--brand', accentColor);
+  document.documentElement.style.setProperty('--user-bg', accentColor);
+  document.documentElement.style.setProperty('--user-text', accentText);
+  if (botName !== 'R-Mind') {
+    document.getElementById('topTitle').innerText = botName;
+    document.getElementById('botNameInput').value = botName;
+  }
+
+  // Markdown
   function parseMarkdown(text) {
     return text
-      .replace(/```(\w+)?\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+      .replace(/```(\w+)?\n?([\s\S]*?)```/g, (_, lang, code) => `<pre><button class="copy-btn" onclick="navigator.clipboard.writeText(this.nextSibling.innerText)">Copy</button><code>${code.replace(/</g,'&lt;')}</code></pre>`)
       .replace(/`([^`]+)`/g, '<code>$1</code>')
       .replace(/^### (.+)$/gm, '<h3>$1</h3>')
       .replace(/^## (.+)$/gm, '<h2>$1</h2>')
       .replace(/^# (.+)$/gm, '<h1>$1</h1>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/^- (.+)$/gm, '<li>$1</li>')
+      .replace(/^[-*] (.+)$/gm, '<li>$1</li>')
       .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
-      .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+      .replace(/(<li>[\s\S]+?<\/li>)/g, '<ul>$1</ul>')
       .replace(/\n{2,}/g, '</p><p>')
-      .replace(/\n/g, '<br>')
-      .replace(/^(?!<[hupol])(.+)$/gm, '<p>$1</p>')
-      .replace(/<p><\/p>/g, '')
-      .replace(/<p>(<h[123]>)/g, '$1')
-      .replace(/(<\/h[123]>)<\/p>/g, '$1');
+      .replace(/\n/g, '<br>');
   }
 
-  function getTime() {
-    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  function getTime() { return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+
+  function getCurrentHistory() {
+    const chat = chats.find(c => c.id === currentChatId);
+    return chat ? chat.history : [];
   }
 
   function addMsg(text, who, isHtml = false) {
@@ -294,27 +543,36 @@
     wrap.className = 'msg-wrap ' + who;
     const content = (who === 'bot' && !isHtml) ? parseMarkdown(text) : text;
     if (who === 'bot') {
-      wrap.innerHTML = `
-        <div class="bot-av">${botAvSVG}</div>
-        <div>
-          <div class="bubble">${content}</div>
-          <div class="ts">${getTime()}</div>
-        </div>`;
+      wrap.innerHTML = `<div class="bot-av">${botAvSVG}</div>
+        <div><div class="bubble">${content}</div><div class="ts">${getTime()}</div></div>`;
     } else {
-      wrap.innerHTML = `
-        <div>
-          <div class="bubble">${text}</div>
-          <div class="ts">${getTime()}</div>
-        </div>`;
+      wrap.innerHTML = `<div><div class="bubble">${content}</div><div class="ts">${getTime()}</div></div>`;
     }
+    msgsDiv.appendChild(wrap);
+    msgsDiv.scrollTop = msgsDiv.scrollHeight;
+
+    // Auto-save artifact if contains code
+    if (who === 'bot' && text.includes('```') && document.getElementById('autoSaveToggle').classList.contains('on')) {
+      const codeMatch = text.match(/```(\w+)?\n?([\s\S]*?)```/);
+      if (codeMatch) saveArtifact('code', 'Code: ' + text.substring(0,40) + '...', codeMatch[2]);
+    }
+  }
+
+  function showTyping() {
+    const wrap = document.createElement('div');
+    wrap.className = 'typing-wrap'; wrap.id = 'typing';
+    wrap.innerHTML = `<div class="bot-av">${botAvSVG}</div>
+      <div class="typing-bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
     msgsDiv.appendChild(wrap);
     msgsDiv.scrollTop = msgsDiv.scrollHeight;
   }
 
+  function removeTyping() { const t = document.getElementById('typing'); if (t) t.remove(); }
+
   function addChips() {
     const chips = document.createElement('div');
     chips.className = 'chips'; chips.id = 'chips';
-    ['What can you do?', 'Write some code', 'Tell me a fact', 'Help me think'].forEach(s => {
+    ['What can you do? 🤔', 'Write me code 💻', 'Tell me a fact 🌍', 'Help me think 🧠'].forEach(s => {
       const btn = document.createElement('button');
       btn.className = 'chip'; btn.innerText = s;
       btn.onclick = () => { chips.remove(); quickSend(s); };
@@ -324,62 +582,339 @@
     msgsDiv.scrollTop = msgsDiv.scrollHeight;
   }
 
-  function showTyping() {
-    const wrap = document.createElement('div');
-    wrap.className = 'typing-wrap'; wrap.id = 'typing';
-    wrap.innerHTML = `
-      <div class="bot-av">${botAvSVG}</div>
-      <div class="typing-bubble">
-        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
-      </div>`;
-    msgsDiv.appendChild(wrap);
-    msgsDiv.scrollTop = msgsDiv.scrollHeight;
+  // Chat management
+  function newChat() {
+    const id = Date.now().toString();
+    const chat = { id, title: 'New Chat', history: [], createdAt: new Date().toISOString() };
+    chats.unshift(chat);
+    currentChatId = id;
+    saveChats();
+    renderChatList();
+    msgsDiv.innerHTML = '';
+    showPanel('chat');
+    addMsg(`Hello! I'm <strong>${botName}</strong> — your personal AI assistant! 🧠<br>✅ Chat in any language<br>📷 Camera & image upload<br>🎤 Voice input`, 'bot', true);
+    addChips();
   }
 
-  function removeTyping() {
-    const t = document.getElementById('typing');
-    if (t) t.remove();
+  function loadChat(id) {
+    const chat = chats.find(c => c.id === id);
+    if (!chat) return;
+    currentChatId = id;
+    msgsDiv.innerHTML = '';
+    showPanel('chat');
+    chat.history.forEach(m => {
+      if (m.role !== 'system') addMsg(m.content, m.role === 'user' ? 'user' : 'bot');
+    });
+    renderChatList();
   }
 
-  async function quickSend(text) {
-    input.value = text;
-    await sendMsg();
+  function deleteChat(id, e) {
+    e.stopPropagation();
+    chats = chats.filter(c => c.id !== id);
+    if (currentChatId === id) { currentChatId = null; msgsDiv.innerHTML = ''; }
+    saveChats();
+    renderChatList();
   }
+
+  function saveChats() { localStorage.setItem('rmind-chats', JSON.stringify(chats)); }
+
+  function renderChatList(filter = '') {
+    const list = document.getElementById('chatList');
+    list.innerHTML = '';
+    const filtered = chats.filter(c => c.title.toLowerCase().includes(filter.toLowerCase()));
+    if (!filtered.length) { list.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--muted);text-align:center">No chats yet</div>'; return; }
+    filtered.forEach(chat => {
+      const d = document.createElement('div');
+      d.className = 'chat-item' + (chat.id === currentChatId ? ' active-chat' : '');
+      d.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span class="chat-item-text">${chat.title}</span>
+        <button class="chat-item-del" onclick="deleteChat('${chat.id}', event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+        </button>`;
+      d.onclick = () => loadChat(chat.id);
+      list.appendChild(d);
+    });
+  }
+
+  function searchChats(val) { renderChatList(val); }
+
+  // Search messages
+  function searchMessages(val) {
+    const results = document.getElementById('searchResults');
+    results.innerHTML = '';
+    if (!val.trim()) { results.innerHTML = '<div style="color:var(--muted);font-size:13px">Type to search...</div>'; return; }
+    let found = 0;
+    chats.forEach(chat => {
+      chat.history.forEach(m => {
+        if (m.role !== 'system' && m.content.toLowerCase().includes(val.toLowerCase())) {
+          found++;
+          const d = document.createElement('div');
+          d.className = 'search-result';
+          d.innerHTML = `<h4>${chat.title}</h4><p>${m.content.substring(0,100)}...</p>`;
+          d.onclick = () => loadChat(chat.id);
+          results.appendChild(d);
+        }
+      });
+    });
+    if (!found) results.innerHTML = '<div style="color:var(--muted);font-size:13px">No results found</div>';
+  }
+
+  // Projects
+  function renderProjects() {
+    const grid = document.getElementById('projectGrid');
+    grid.innerHTML = '';
+    const icons = ['🚀','💡','🎯','🔬','🎨','📊'];
+    projects.forEach((p, i) => {
+      const d = document.createElement('div');
+      d.className = 'project-card';
+      d.innerHTML = `<div class="pc-icon">${icons[i % icons.length]}</div><h4>${p.name}</h4><p>${p.desc || 'No description'}</p><div class="pc-count">${p.chats || 0} chats</div>`;
+      grid.appendChild(d);
+    });
+  }
+
+  function addProject() {
+    const name = prompt('Project name:');
+    if (!name) return;
+    projects.push({ name, desc: '', chats: 0 });
+    localStorage.setItem('rmind-projects', JSON.stringify(projects));
+    renderProjects();
+  }
+
+  // Artifacts
+  function saveArtifact(type, title, content) {
+    const art = { id: Date.now(), type, title, content, date: new Date().toLocaleDateString() };
+    artifacts.unshift(art);
+    if (artifacts.length > 50) artifacts = artifacts.slice(0, 50);
+    localStorage.setItem('rmind-artifacts', JSON.stringify(artifacts));
+    document.getElementById('artifactBadge').innerText = artifacts.length;
+    renderArtifacts();
+  }
+
+  function renderArtifacts() {
+    const list = document.getElementById('artifactList');
+    list.innerHTML = '';
+    if (!artifacts.length) { list.innerHTML = '<div style="color:var(--muted);font-size:13px">No artifacts yet. Code blocks from conversations are auto-saved here!</div>'; return; }
+    artifacts.forEach(a => {
+      const d = document.createElement('div');
+      d.className = 'artifact-item';
+      const iconClass = a.type === 'code' ? 'code' : a.type === 'image' ? 'img' : 'doc';
+      const iconEmoji = a.type === 'code' ? '💻' : a.type === 'image' ? '🖼️' : '📄';
+      d.innerHTML = `
+        <div class="artifact-icon ${iconClass}">${iconEmoji}</div>
+        <div class="artifact-info"><h4>${a.title}</h4><p>${a.type} artifact</p></div>
+        <span class="artifact-date">${a.date}</span>`;
+      list.appendChild(d);
+    });
+    document.getElementById('artifactBadge').innerText = artifacts.length;
+  }
+
+  // Code editor
+  function runCode() {
+    const code = document.getElementById('codeTextarea').value;
+    const output = document.getElementById('codeOutput');
+    const logs = [];
+    try {
+      const orig = console.log;
+      console.log = (...args) => logs.push(args.join(' '));
+      eval(code);
+      console.log = orig;
+      output.style.color = '#5ef08a';
+      output.innerText = logs.length ? logs.join('\n') : '// Code ran successfully (no output)';
+    } catch(e) {
+      output.style.color = '#ff4444';
+      output.innerText = '❌ Error: ' + e.message;
+    }
+  }
+
+  function copyCode() {
+    navigator.clipboard.writeText(document.getElementById('codeTextarea').value);
+  }
+
+  function saveCodeAsArtifact() {
+    const code = document.getElementById('codeTextarea').value;
+    saveArtifact('code', 'Code Snippet - ' + new Date().toLocaleDateString(), code);
+    alert('✅ Saved as artifact!');
+  }
+
+  // Customize
+  function setColor(color, textColor, el) {
+    document.querySelectorAll('.color-opt').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    document.documentElement.style.setProperty('--brand', color);
+    document.documentElement.style.setProperty('--user-bg', color);
+    document.documentElement.style.setProperty('--user-text', textColor);
+    localStorage.setItem('rmind-accent', color);
+    localStorage.setItem('rmind-accent-text', textColor);
+  }
+
+  function saveBotName() {
+    botName = document.getElementById('botNameInput').value || 'R-Mind';
+    localStorage.setItem('rmind-botname', botName);
+    document.getElementById('topTitle').innerText = botName;
+    document.querySelector('.sb-title').innerHTML = botName.replace('-','<span>-') + (botName.includes('-') ? '</span>' : '');
+    alert('✅ Bot name saved!');
+  }
+
+  function toggleCompact() {
+    document.querySelectorAll('.bubble').forEach(b => b.style.padding = document.getElementById('compactToggle').classList.contains('on') ? '7px 11px' : '10px 14px');
+  }
+
+  function clearAllChats() {
+    if (!confirm('Delete all chats?')) return;
+    chats = []; currentChatId = null;
+    saveChats(); renderChatList();
+    msgsDiv.innerHTML = '';
+  }
+
+  // Sidebar
+  function toggleSidebar() {
+    const sb = document.getElementById('sidebar');
+    const overlay = document.getElementById('sb-overlay');
+    sb.classList.toggle('collapsed');
+    overlay.classList.toggle('show');
+  }
+
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.add('collapsed');
+    document.getElementById('sb-overlay').classList.remove('show');
+  }
+
+  // Panel switching
+  function showPanel(name) {
+    document.querySelectorAll('.panel').forEach(p => { p.classList.remove('active'); p.style.display = 'none'; });
+    const panel = document.getElementById('panel-' + name);
+    if (panel) { panel.classList.add('active'); panel.style.display = 'flex'; panel.style.flexDirection = 'column'; }
+    document.querySelectorAll('.sb-nav-item').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.sb-nav-item').forEach(i => { if (i.getAttribute('onclick')?.includes(name)) i.classList.add('active'); });
+    const titles = { chat: 'R-Mind', search: 'Search', projects: 'Projects', artifacts: 'Artifacts', code: 'Code Editor', customize: 'Customize' };
+    const subs = { chat: 'online · ready', search: 'find anything', projects: 'your workspace', artifacts: 'saved outputs', code: 'run & test', customize: 'personalize' };
+    document.getElementById('topTitle').innerText = titles[name] || 'R-Mind';
+    document.getElementById('topSub').innerText = subs[name] || 'online';
+    if (name === 'projects') renderProjects();
+    if (name === 'artifacts') renderArtifacts();
+  }
+
+  // Image upload
+  function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      pendingImageBase64 = e.target.result;
+      document.getElementById('preview-thumb').src = e.target.result;
+      document.getElementById('preview-name').innerText = file.name;
+      document.getElementById('preview-bar').classList.add('show');
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  }
+
+  function removeImage() { pendingImageBase64 = null; document.getElementById('preview-bar').classList.remove('show'); }
+
+  // Camera
+  async function openCamera() {
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+      document.getElementById('camVideo').srcObject = cameraStream;
+      document.getElementById('camera-modal').classList.add('show');
+    } catch(e) { addMsg('⚠️ Camera access denied. Please allow camera permission.', 'bot'); }
+  }
+
+  function capturePhoto() {
+    const video = document.getElementById('camVideo');
+    const canvas = document.getElementById('snapCanvas');
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+    pendingImageBase64 = dataUrl;
+    document.getElementById('preview-thumb').src = dataUrl;
+    document.getElementById('preview-name').innerText = 'camera-photo.jpg';
+    document.getElementById('preview-bar').classList.add('show');
+    closeCamera();
+  }
+
+  function closeCamera() {
+    if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+    document.getElementById('camera-modal').classList.remove('show');
+  }
+
+  // Voice
+  function toggleVoice() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) { addMsg('⚠️ Voice only works in Chrome!', 'bot'); return; }
+    if (isRecording) { recognition.stop(); return; }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SR();
+    recognition.continuous = false; recognition.interimResults = false; recognition.lang = 'ur-PK';
+    recognition.onstart = () => { isRecording = true; document.getElementById('micBtn').classList.add('recording'); };
+    recognition.onresult = (e) => { inputEl.value = e.results[0][0].transcript; };
+    recognition.onend = () => { isRecording = false; document.getElementById('micBtn').classList.remove('recording'); };
+    recognition.onerror = () => { isRecording = false; document.getElementById('micBtn').classList.remove('recording'); };
+    recognition.start();
+  }
+
+  async function quickSend(text) { inputEl.value = text; await sendMsg(); }
 
   async function sendMsg() {
-    const text = input.value.trim();
-    if (!text) return;
-    input.value = '';
+    const text = inputEl.value.trim();
+    const image = pendingImageBase64;
+    if (!text && !image) return;
+    inputEl.value = '';
 
+    if (!currentChatId) {
+      const id = Date.now().toString();
+      const chat = { id, title: text.substring(0,30) || 'New Chat', history: [], createdAt: new Date().toISOString() };
+      chats.unshift(chat); currentChatId = id; saveChats(); renderChatList();
+    }
+
+    const chat = chats.find(c => c.id === currentChatId);
     const c = document.getElementById('chips');
     if (c) c.remove();
 
-    addMsg(text, 'user');
-    history.push({ role: 'user', content: text });
+    if (image) {
+      const wrap = document.createElement('div');
+      wrap.className = 'msg-wrap user';
+      wrap.innerHTML = `<div><img class="user-img" src="${image}" alt="uploaded"/>${text ? `<div class="bubble">${text}</div>` : ''}<div class="ts">${getTime()}</div></div>`;
+      msgsDiv.appendChild(wrap); msgsDiv.scrollTop = msgsDiv.scrollHeight;
+      removeImage();
+      if (document.getElementById('autoSaveToggle').classList.contains('on')) saveArtifact('image', 'Image - ' + getTime(), image);
+    } else {
+      addMsg(text, 'user');
+    }
+
+    const userMsg = text || 'What is in this image? Describe it in detail.';
+    if (chat) { chat.history.push({ role: 'user', content: userMsg }); saveChats(); if (chat.history.length === 1) { chat.title = userMsg.substring(0,30); renderChatList(); } }
+
     showTyping();
 
     try {
+      const history = chat ? chat.history : [];
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
         body: JSON.stringify({
           model: 'llama-3.3-70b-versatile',
-          max_tokens: 1000,
+          max_tokens: 1500,
           messages: [
             {
               role: 'system',
-              content: `You are R-Mind, a smart AI assistant created by Rehan.
-Format every response clearly like ChatGPT:
-- Use bullet points or numbered steps for lists
-- Use headings (##) for sections
-- Use code blocks for any code
-- Break answers into short paragraphs
+              content: `You are ${botName} — a powerful AI assistant created by Rehan.
+
+LANGUAGE RULE:
+- Default language is English
+- If user writes in Urdu → reply in Urdu
+- If user writes in Roman Urdu → reply in Roman Urdu
+- If user writes in any other language → reply in that same language
+- Never switch language on your own
+
+FORMATTING:
+- Use bullet points for lists
+- Use ## headings for sections
+- Use code blocks for code
+- Short clear paragraphs
 - Never write a wall of text
-- Be concise and easy to read
-If asked who made you: "I was created by Rehan — a brilliant developer!"`
+
+If asked who made you: reply in user's language that Rehan created you.`
             },
             ...history
           ]
@@ -387,27 +922,25 @@ If asked who made you: "I was created by Rehan — a brilliant developer!"`
       });
 
       const data = await res.json();
-
-      if (data.error) {
-        removeTyping();
-        addMsg('⚠️ Error: ' + data.error.message, 'bot');
-        return;
-      }
-
-      const reply = data.choices?.[0]?.message?.content || 'Something went wrong. Try again!';
+      if (data.error) { removeTyping(); addMsg('⚠️ ' + data.error.message, 'bot'); return; }
+      const reply = data.choices?.[0]?.message?.content || 'Something went wrong!';
       removeTyping();
       addMsg(reply, 'bot');
-      history.push({ role: 'assistant', content: reply });
+      if (chat) { chat.history.push({ role: 'assistant', content: reply }); saveChats(); }
 
-    } catch (err) {
+    } catch(err) {
       removeTyping();
-      addMsg('⚠️ Connection failed. Check your internet or API key.', 'bot');
+      addMsg('⚠️ Connection failed. Check internet or API key.', 'bot');
     }
   }
 
+  // Init
   window.onload = () => {
-    addMsg("Hello! I'm <strong>R-Mind</strong> — your intelligent AI assistant, created by <strong>Rehan</strong>. Ask me anything!", 'bot', true);
-    addChips();
+    renderChatList();
+    renderArtifacts();
+    renderProjects();
+    document.getElementById('artifactBadge').innerText = artifacts.length || 0;
+    newChat();
   };
 </script>
 </body>
