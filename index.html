@@ -73,8 +73,8 @@ body{font-family:'Rajdhani',sans-serif;background:#000;display:flex;position:fix
 #app.hide{display:none}
 
 /* SIDEBAR */
-#sb{width:220px;height:100%;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;transition:transform 0.25s;position:relative;z-index:10}
-#sb.off{transform:translateX(-100%);position:fixed;height:100vh}
+#sb{width:220px;height:100%;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;transition:transform 0.25s ease;position:relative;z-index:10}
+#sb.off{transform:translateX(-100%)}
 
 .sb-head{padding:12px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;gap:9px}
 .sb-logo-sm{width:26px;height:26px;flex-shrink:0}
@@ -224,8 +224,9 @@ body{font-family:'Rajdhani',sans-serif;background:#000;display:flex;position:fix
 #fin{display:none}
 
 @media(max-width:640px){
-  #sb{width:100%;position:fixed;left:0;top:0;height:100%;z-index:20}
+  #sb{width:82%;max-width:260px;position:fixed;left:0;top:0;height:100%;z-index:20;transform:translateX(-100%)}
   #sb.off{transform:translateX(-100%)}
+  #sb.open{transform:translateX(0)}
   .bub{max-width:85%}
   #msgs{padding:12px}
   .wl-logo{width:64px;height:64px}
@@ -398,6 +399,8 @@ console.log("Hello R-Mind!");</textarea>
 
 <script>
 // ── API KEY — PASTE YOUR GROQ KEY HERE ──
+// ── APNI DEEPSEEK KEY YAHAN PASTE KARO ──
+// Get it from: platform.deepseek.com → API Keys
 const API_KEY = "sk-5a8ccc44e128413da8a886e9053195cb";
 
 let chats=JSON.parse(localStorage.getItem('rm-chats')||'[]');
@@ -640,8 +643,8 @@ async function send(){
 
   // Check key
   const key=API_KEY.trim();
-  if(!key||key==='sk-ReplaceWithYourDeepseekKey'||key.length<10){
-    hideTyp();addMsg('⚠ API key not set. Add your Deepseek key in code — get it from platform.deepseek.com','bot');return;
+  if(!key||key.includes('PASTE_YOUR')||key.includes('Replace')||key.length<8){
+    hideTyp();addMsg('⚠ API key not found! Open index.html, find API_KEY line and paste your Deepseek key from platform.deepseek.com','bot');return;
   }
 
   try{
@@ -706,8 +709,25 @@ function saveName(){botName=document.getElementById('bnIn').value||'R-Mind';loca
 function clearAll(){if(!confirm('Delete all chats?'))return;chats=[];curId=null;svC();renderChats();showWelcome();}
 
 // SIDEBAR
-function togSB(){document.getElementById('sb').classList.toggle('off');document.getElementById('ov').classList.toggle('on');}
-function closeSB(){document.getElementById('sb').classList.add('off');document.getElementById('ov').classList.remove('on');}
+function togSB(){
+  const sb=document.getElementById('sb');
+  const ov=document.getElementById('ov');
+  const isMobile=window.innerWidth<=640;
+  if(isMobile){
+    const isOpen=sb.classList.contains('open');
+    if(isOpen){sb.classList.remove('open');ov.classList.remove('on');}
+    else{sb.classList.add('open');ov.classList.add('on');}
+  } else {
+    sb.classList.toggle('off');
+  }
+}
+function closeSB(){
+  const sb=document.getElementById('sb');
+  const ov=document.getElementById('ov');
+  const isMobile=window.innerWidth<=640;
+  if(isMobile){sb.classList.remove('open');ov.classList.remove('on');}
+  else{sb.classList.add('off');ov.classList.remove('on');}
+}
 </script>
 </body>
 </html>
