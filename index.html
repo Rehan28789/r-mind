@@ -363,8 +363,8 @@ console.log("Hello R-Mind!");</textarea>
 // ════════════════════════════════
 //  DEEPSEEK API KEY — YAHAN LAGAO
 // ════════════════════════════════
-const API_KEY = "sk-d3871505c57245b5b3c0ce60b469fb08";
-// platform.deepseek.com se key lao
+const API_KEY = "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";
+// console.groq.com se FREE key lao
 // ════════════════════════════════
 
 let chats=JSON.parse(localStorage.getItem('rm-c')||'[]');
@@ -562,16 +562,16 @@ async function send(){
 
   // API KEY CHECK
   const key=API_KEY.trim();
-  if(!key||key.includes('APNI')||key.includes('YAHAN')||key.length<10){
-    hideT();addMsg('⚠ API key add karo! File mein API_KEY = "sk-..." wali line mein apni Deepseek key paste karo.','bot');return;
+  if(!key||key.includes('APNI')||key.includes('YAHAN')||key.includes('LAGAO')||key.length<10){
+    hideT();addMsg('⚠ Groq key add karo! console.groq.com se FREE key lao aur file mein lagao.','bot');return;
   }
 
   try{
-    const r=await fetch('https://api.deepseek.com/chat/completions',{
+    const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
       body:JSON.stringify({
-        model:'deepseek-chat',
+        model:'llama-3.3-70b-versatile',
         max_tokens:1500,
         messages:[
           {role:'system',content:`You are ${botName}, a smart AI assistant made by Rehan. ${langR} Use bullet points and headings for long answers. Be helpful and clear.`},
