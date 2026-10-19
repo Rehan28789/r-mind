@@ -10,19 +10,21 @@
 html,body{width:100%;height:100%;overflow:hidden}
 body{font-family:'Rajdhani',sans-serif;background:#000;display:flex;position:fixed;inset:0;color:#fff}
 :root{--bg:#000;--s1:#0d0d0d;--s2:#161616;--s3:#1f1f1f;--br:#252525;--br2:#333;--red:#e74c3c;--green:#2ecc71}
+@keyframes fl{from{transform:translateY(0)}to{transform:translateY(-8px)}}
+@keyframes bf{to{width:160px}}
+@keyframes bk{0%,100%{opacity:1}50%{opacity:0.2}}
+@keyframes mi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes td{0%,60%,100%{opacity:0.3}30%{opacity:1}}
 
 /* BOOT */
 #boot{position:fixed;inset:0;background:#000;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;transition:opacity 0.5s}
 #boot.hide{opacity:0;pointer-events:none}
-@keyframes fl{from{transform:translateY(0)}to{transform:translateY(-8px)}}
 .b-logo{width:80px;height:80px;animation:fl 2s ease infinite alternate}
 .b-title{font-family:'Share Tech Mono',monospace;font-size:24px;letter-spacing:8px;color:#fff}
 .b-title span{color:#e74c3c}
 .b-bar{width:160px;height:1px;background:#1a1a1a;overflow:hidden}
 .b-fill{height:1px;width:0;background:#fff;animation:bf 2s ease forwards}
-@keyframes bf{to{width:160px}}
 .b-sub{font-family:'JetBrains Mono',monospace;font-size:10px;color:#555;letter-spacing:3px;animation:bk 1s infinite}
-@keyframes bk{0%,100%{opacity:1}50%{opacity:0.2}}
 
 /* LOGIN */
 #login{position:fixed;inset:0;background:#000;z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
@@ -125,7 +127,6 @@ body{font-family:'Rajdhani',sans-serif;background:#000;display:flex;position:fix
 #msgs.hide{display:none}
 .mw{display:flex;align-items:flex-start;gap:10px;animation:mi 0.2s ease}
 .mw.u{flex-direction:row-reverse}
-@keyframes mi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .bav{width:28px;height:28px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:4px}
 .bav svg{width:100%;height:100%}
 .uav{width:28px;height:28px;background:var(--s3);border:1px solid var(--br2);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Share Tech Mono',monospace;font-size:11px;color:#fff}
@@ -136,6 +137,12 @@ body{font-family:'Rajdhani',sans-serif;background:#000;display:flex;position:fix
 .mw.u .bub h1,.mw.u .bub h2,.mw.u .bub h3{color:#000}
 .bub p{margin:0 0 6px}.bub p:last-child{margin:0}
 .bub ul{padding-left:16px;margin:0 0 6px}.bub li{margin:0 0 3px}
+.bub table{width:100%;border-collapse:collapse;margin:8px 0;font-size:12px;font-family:'JetBrains Mono',monospace}
+.bub th{background:#1a1a1a;color:#fff;padding:6px 10px;text-align:left;border:1px solid #333;font-size:11px}
+.bub td{padding:5px 10px;border:1px solid #2a2a2a;color:#ccc;vertical-align:top}
+.bub tr:nth-child(even) td{background:#111}
+.mw.u .bub table th{background:#ddd;color:#000}
+.mw.u .bub table td{color:#000;border-color:#ccc}
 .bub code{background:#000;color:#ddd;padding:2px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;border:1px solid #2a2a2a;border-radius:4px}
 .bub pre{background:#000;border:1px solid #222;border-radius:8px;padding:12px;margin:8px 0;overflow-x:auto}
 .bub pre code{background:none;border:none;padding:0;font-size:11px;line-height:1.6}
@@ -147,7 +154,6 @@ body{font-family:'Rajdhani',sans-serif;background:#000;display:flex;position:fix
 .tbub{background:var(--s2);border:1px solid var(--br);border-radius:14px;padding:12px 14px;display:flex;gap:5px;align-items:center}
 .dot{width:4px;height:4px;background:#888;border-radius:50%;animation:td 1.2s infinite}
 .dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
-@keyframes td{0%,60%,100%{opacity:0.3}30%{opacity:1}}
 
 /* PREVIEW */
 #prev{display:none;padding:7px 12px;background:var(--s2);border-top:1px solid var(--br);align-items:center;gap:8px;flex-shrink:0}
@@ -173,7 +179,7 @@ body{font-family:'Rajdhani',sans-serif;background:#000;display:flex;position:fix
 #fn{text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;color:#222;margin-top:5px}
 #fn span{color:#333}
 
-/* OTHER PANELS */
+/* PANELS */
 .ph{padding:14px 16px;border-bottom:1px solid var(--br);flex-shrink:0}
 .ph h2{font-family:'Share Tech Mono',monospace;font-size:13px;letter-spacing:3px;color:#fff;margin:0}
 .ph p{font-family:'JetBrains Mono',monospace;font-size:9px;color:#666;margin:3px 0 0}
@@ -188,7 +194,6 @@ body{font-family:'Rajdhani',sans-serif;background:#000;display:flex;position:fix
 .dbtn{width:100%;padding:9px;background:none;border:1px solid #2a2a2a;border-radius:8px;color:#777;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;cursor:pointer;margin-top:6px;transition:all 0.15s}
 .dbtn:hover{border-color:#e74c3c;color:#e74c3c}
 
-/* OVERLAY */
 #ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9}
 #ov.on{display:block}
 #fin{display:none}
@@ -202,14 +207,11 @@ body{font-family:'Rajdhani',sans-serif;background:#000;display:flex;position:fix
 }
 @media(max-width:480px){
   .bub{max-width:92%;font-size:13px;padding:9px 11px}
-  .mts{font-size:8px}
   #inp-row{gap:5px}
   .ib{width:30px;height:30px}
   #snd{width:32px;height:32px}
   #ui{font-size:12px;padding:8px 10px}
 }
-
-/* DESKTOP */
 @media(min-width:641px){
   #sb{transform:none!important}
   #sb.desk-off{transform:translateX(-100%)!important;position:absolute}
@@ -231,7 +233,6 @@ body{font-family:'Rajdhani',sans-serif;background:#000;display:flex;position:fix
   </symbol>
 </svg>
 
-<!-- BOOT -->
 <div id="boot">
   <div class="b-logo"><svg viewBox="0 0 100 100"><use href="#hl"/></svg></div>
   <div class="b-title">R<span>-</span>MIND</div>
@@ -239,13 +240,12 @@ body{font-family:'Rajdhani',sans-serif;background:#000;display:flex;position:fix
   <div class="b-sub">LOADING...</div>
 </div>
 
-<!-- LOGIN -->
 <div id="login">
   <div class="lw">
     <div class="lh">
       <div class="lh-logo"><svg viewBox="0 0 100 100"><use href="#hl"/></svg></div>
       <div class="lh-title">R<span>-</span>MIND</div>
-      <div class="lh-sub">AI ASSISTANT · BY REHAN</div>
+      <div class="lh-sub">BBA AI ASSISTANT · BY REHAN</div>
     </div>
     <div class="lc">
       <div class="tabs">
@@ -266,7 +266,6 @@ body{font-family:'Rajdhani',sans-serif;background:#000;display:flex;position:fix
   </div>
 </div>
 
-<!-- APP -->
 <div id="app" class="hide">
   <div id="sb">
     <div class="sb-hd">
@@ -295,19 +294,19 @@ body{font-family:'Rajdhani',sans-serif;background:#000;display:flex;position:fix
       <div class="tb-v">v3.0</div>
     </div>
     <div id="cnt">
-
-      <!-- CHAT -->
       <div id="p-chat" class="panel on">
         <div id="wlc">
           <svg class="wl-logo" viewBox="0 0 100 100"><use href="#hl"/></svg>
           <div class="wl-title">R<span>-</span>MIND</div>
-          <div class="wl-sub">AI ASSISTANT · BY REHAN</div>
-          <div class="wl-desc">Ask me anything. I reply in your language, analyze images, write code and more.</div>
+          <div class="wl-sub">BBA AI ASSISTANT · BY REHAN</div>
+          <div class="wl-desc">Ask anything from BBA — Accounting, Economics, Marketing, Management, Statistics, Business Law and more.</div>
           <div class="wl-chips">
-            <button class="wl-chip" onclick="qs('What can you do?')">What can you do?</button>
-            <button class="wl-chip" onclick="qs('Write me some code')">Write code</button>
-            <button class="wl-chip" onclick="qs('Tell me an interesting fact')">Tell a fact</button>
-            <button class="wl-chip" onclick="qs('Help me think through a problem')">Help me think</button>
+            <button class="wl-chip" onclick="qs('Journal entry for cash sale of Rs.10,000')">📊 Journal Entry</button>
+            <button class="wl-chip" onclick="qs('Explain Supply and Demand with example')">📈 Economics</button>
+            <button class="wl-chip" onclick="qs('What is Marketing Mix 4Ps?')">📣 Marketing</button>
+            <button class="wl-chip" onclick="qs('Explain Maslow motivation theory')">🏢 Management</button>
+            <button class="wl-chip" onclick="qs('How to calculate Mean and Standard Deviation?')">📋 Statistics</button>
+            <button class="wl-chip" onclick="qs('What is a business contract in law?')">⚖️ Business Law</button>
           </div>
         </div>
         <div id="msgs" class="hide"></div>
@@ -317,14 +316,13 @@ body{font-family:'Rajdhani',sans-serif;background:#000;display:flex;position:fix
             <button class="ib" onclick="document.getElementById('fin').click()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></button>
             <button class="ib" onclick="openCam()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
             <button class="ib" id="micB" onclick="togV()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
-            <input id="ui" type="text" placeholder="Message R-Mind..." autocomplete="off" onkeydown="if(event.key==='Enter')send()"/>
+            <input id="ui" type="text" placeholder="Ask any BBA question..." autocomplete="off" onkeydown="if(event.key==='Enter')send()"/>
             <button id="snd" onclick="send()"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button>
           </div>
           <div id="fn">R-MIND v3.0 · BY <span>REHAN</span></div>
         </div>
       </div>
 
-      <!-- CODE -->
       <div id="p-code" class="panel">
         <div class="ph"><h2>CODE EDITOR</h2><p>// write · run · test</p></div>
         <div class="pb">
@@ -339,7 +337,6 @@ console.log("Hello R-Mind!");</textarea>
         </div>
       </div>
 
-      <!-- SETTINGS -->
       <div id="p-settings" class="panel">
         <div class="ph"><h2>SETTINGS</h2><p>// configuration</p></div>
         <div class="pb">
@@ -351,7 +348,6 @@ console.log("Hello R-Mind!");</textarea>
           <button class="dbtn" onclick="clearAll()">⚠ CLEAR ALL CHATS</button>
         </div>
       </div>
-
     </div>
   </div>
 </div>
@@ -360,13 +356,7 @@ console.log("Hello R-Mind!");</textarea>
 <canvas id="sc" style="display:none"></canvas>
 
 <script>
-// ════════════════════════════════
-//  DEEPSEEK API KEY — YAHAN LAGAO
-// ════════════════════════════════
-const API_KEY = "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";
-// console.groq.com se FREE key lao
-// ════════════════════════════════
-
+// No API key in frontend — it's safe on server now!
 let chats=JSON.parse(localStorage.getItem('rm-c')||'[]');
 let curId=null, pendImg=null, isUp=false, wShown=true;
 let users=JSON.parse(localStorage.getItem('rm-u')||'[]');
@@ -380,33 +370,22 @@ const hSVG=`<svg viewBox="0 0 100 100"><use href="#hl"/></svg>`;
 
 if(botName!=='R-Mind') document.getElementById('bnIn').value=botName;
 
-// ── BOOT ──
 window.onload=()=>{
   setTimeout(()=>{
     document.getElementById('boot').classList.add('hide');
-    setTimeout(()=>{
-      document.getElementById('boot').style.display='none';
-      if(curUser) showApp();
-    },500);
+    setTimeout(()=>{document.getElementById('boot').style.display='none';if(curUser)showApp();},500);
   },2000);
 };
 
-// ── AUTH ──
-function swTab(up){
-  isUp=up;
-  document.getElementById('tin').classList.toggle('on',!up);
-  document.getElementById('tup').classList.toggle('on',up);
-  document.getElementById('lbtn').innerText=up?'CREATE ACCOUNT':'LOGIN';
-  document.getElementById('lerr').classList.remove('on');
-}
-
+// AUTH
+function swTab(up){isUp=up;document.getElementById('tin').classList.toggle('on',!up);document.getElementById('tup').classList.toggle('on',up);document.getElementById('lbtn').innerText=up?'CREATE ACCOUNT':'LOGIN';document.getElementById('lerr').classList.remove('on');}
 function doAuth(){
   const em=document.getElementById('em').value.trim();
   const pw=document.getElementById('pw').value;
   const err=document.getElementById('lerr');
   if(!em||!pw){err.innerText='Fill all fields';err.classList.add('on');return;}
   if(isUp){
-    if(users.find(u=>u.em===em)){err.innerText='Email already registered';err.classList.add('on');return;}
+    if(users.find(u=>u.em===em)){err.innerText='Email already exists';err.classList.add('on');return;}
     const u={name:em.split('@')[0],em,pw,av:em[0].toUpperCase()};
     users.push(u);localStorage.setItem('rm-u',JSON.stringify(users));setUser(u);
   } else {
@@ -415,34 +394,14 @@ function doAuth(){
     setUser(u);
   }
 }
-
 function gAuth(){setUser({name:'Rehan',em:'rehan@gmail.com',av:'R'});}
 function guest(){setUser({name:'Guest',em:'',av:'G',g:true});}
-
-function setUser(u){
-  curUser=u;localStorage.setItem('rm-cu',JSON.stringify(u));
-  document.getElementById('sav').innerText=u.av||u.name[0].toUpperCase();
-  document.getElementById('sun').innerText=(u.name||'GUEST').toUpperCase();
-  showApp();
-}
-
-function logout(){
-  curUser=null;localStorage.removeItem('rm-cu');
-  document.getElementById('app').classList.add('hide');
-  document.getElementById('login').classList.remove('hide');
-  document.getElementById('em').value='';
-  document.getElementById('pw').value='';
-}
-
-function showApp(){
-  document.getElementById('login').classList.add('hide');
-  document.getElementById('app').classList.remove('hide');
-  renderC();showWlc();
-}
-
+function setUser(u){curUser=u;localStorage.setItem('rm-cu',JSON.stringify(u));document.getElementById('sav').innerText=u.av||u.name[0].toUpperCase();document.getElementById('sun').innerText=(u.name||'GUEST').toUpperCase();showApp();}
+function logout(){curUser=null;localStorage.removeItem('rm-cu');document.getElementById('app').classList.add('hide');document.getElementById('login').classList.remove('hide');document.getElementById('em').value='';document.getElementById('pw').value='';}
+function showApp(){document.getElementById('login').classList.add('hide');document.getElementById('app').classList.remove('hide');renderC();showWlc();}
 function showWlc(){wEl.classList.remove('hide');mEl.classList.add('hide');mEl.innerHTML='';wShown=true;curId=null;}
 
-// ── MARKDOWN ──
+// MARKDOWN
 function md(t){
   return t
     .replace(/```(\w+)?\n?([\s\S]*?)```/g,(_,l,c)=>`<pre><code>${c.replace(/</g,'&lt;')}</code></pre>`)
@@ -450,6 +409,9 @@ function md(t){
     .replace(/^## (.+)$/gm,'<h2>$1</h2>').replace(/^# (.+)$/gm,'<h1>$1</h1>')
     .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
     .replace(/^- (.+)$/gm,'<li>$1</li>').replace(/(<li>[\s\S]+?<\/li>)/g,'<ul>$1</ul>')
+    .replace(/\|\s*([^|\n]+)\s*/g,(m,p)=>`<td>${p.trim()}</td>`)
+    .replace(/(<td>[^<]*<\/td>)+/g,m=>`<tr>${m}</tr>`)
+    .replace(/(<tr>[^]*?<\/tr>)/g,m=>`<table>${m}</table>`)
     .replace(/\n{2,}/g,'</p><p>').replace(/\n/g,'<br>');
 }
 function ts(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
@@ -459,93 +421,47 @@ function addMsg(text,who,isH=false){
   const ct=(who==='bot'&&!isH)?md(text):text;
   const av=(curUser&&(curUser.av||curUser.name[0]))||'G';
   if(who==='bot'){
-    wrap.innerHTML=`<div class="bav">${hSVG}</div><div style="flex:1;min-width:0"><div class="bub">${ct}</div><div class="mts">${ts()}</div></div>`;
+    wrap.innerHTML=`<div class="bav">${hSVG}</div><div style="flex:1;min-width:0;overflow:hidden"><div class="bub">${ct}</div><div class="mts">${ts()}</div></div>`;
   } else {
     wrap.innerHTML=`<div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-end"><div class="bub">${ct}</div><div class="mts">${ts()}</div></div><div class="uav">${av.toUpperCase()}</div>`;
   }
   mEl.appendChild(wrap);mEl.scrollTop=mEl.scrollHeight;
 }
 
-function showT(){
-  const w=document.createElement('div');w.className='tw';w.id='typ';
-  w.innerHTML=`<div class="bav">${hSVG}</div><div class="tbub"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
-  mEl.appendChild(w);mEl.scrollTop=mEl.scrollHeight;
-}
+function showT(){const w=document.createElement('div');w.className='tw';w.id='typ';w.innerHTML=`<div class="bav">${hSVG}</div><div class="tbub"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;mEl.appendChild(w);mEl.scrollTop=mEl.scrollHeight;}
 function hideT(){const t=document.getElementById('typ');if(t)t.remove();}
 
-// ── CHATS ──
-function newChat(){
-  wEl.classList.add('hide');mEl.classList.remove('hide');mEl.innerHTML='';wShown=false;
-  const id=Date.now().toString();
-  chats.unshift({id,title:'New Chat',history:[]});
-  curId=id;svC();renderC();
-}
-
-function loadChat(id){
-  const c=chats.find(x=>x.id===id);if(!c)return;
-  wEl.classList.add('hide');mEl.classList.remove('hide');mEl.innerHTML='';wShown=false;
-  curId=id;
-  c.history.forEach(m=>{if(m.role!=='system')addMsg(m.content,m.role==='user'?'u':'bot');});
-  renderC();if(window.innerWidth<=640)closeSB();
-}
-
-function delChat(id,e){
-  e.stopPropagation();chats=chats.filter(x=>x.id!==id);
-  if(curId===id)showWlc();svC();renderC();
-}
-
+// CHATS
+function newChat(){wEl.classList.add('hide');mEl.classList.remove('hide');mEl.innerHTML='';wShown=false;const id=Date.now().toString();chats.unshift({id,title:'New Chat',history:[]});curId=id;svC();renderC();}
+function loadChat(id){const c=chats.find(x=>x.id===id);if(!c)return;wEl.classList.add('hide');mEl.classList.remove('hide');mEl.innerHTML='';wShown=false;curId=id;c.history.forEach(m=>{if(m.role!=='system')addMsg(m.content,m.role==='user'?'u':'bot');});renderC();if(window.innerWidth<=640)closeSB();}
+function delChat(id,e){e.stopPropagation();chats=chats.filter(x=>x.id!==id);if(curId===id)showWlc();svC();renderC();}
 function svC(){localStorage.setItem('rm-c',JSON.stringify(chats));}
-
 function renderC(){
   const el=document.getElementById('cl');el.innerHTML='';
   chats.forEach(c=>{
     const d=document.createElement('button');d.className='cr'+(c.id===curId?' on':'');
-    d.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      <span class="cr-t">${c.title}</span>
-      <button class="cr-d" onclick="delChat('${c.id}',event)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
-      </button>`;
+    d.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="cr-t">${c.title}</span><button class="cr-d" onclick="delChat('${c.id}',event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>`;
     d.onclick=()=>loadChat(c.id);el.appendChild(d);
   });
 }
+function showP(name,el){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));document.getElementById('p-'+name).classList.add('on');document.querySelectorAll('.ni').forEach(i=>i.classList.remove('on'));if(el)el.classList.add('on');if(window.innerWidth<=640)closeSB();}
 
-function showP(name,el){
-  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
-  document.getElementById('p-'+name).classList.add('on');
-  document.querySelectorAll('.ni').forEach(i=>i.classList.remove('on'));
-  if(el)el.classList.add('on');
-  if(window.innerWidth<=640)closeSB();
-}
-
-// ── LANG DETECT ──
+// LANGUAGE DETECT
 function detectLang(t){
   if(/[\u0600-\u06FF]/.test(t)) return 'Reply in Urdu script ONLY.';
-  const rw=['kya','hai','karo','mera','tera','tum','hum','aur','nahi','kuch','bhi','yeh','wo','ap','aap','tha','thi','kr','ho','ga','gi','na','ka','ki','ke','sa','se','ma','me','hy','hain','hun','mn','main','mujhe','koi','kaise','kaisa','theek','accha','plz','bta','wala','wali','hoga','krna','btao','mjhe'];
-  const words=t.toLowerCase().split(/\s+/);
-  if(words.some(w=>rw.includes(w))) return 'Reply in Roman Urdu ONLY (Urdu in English letters). Do NOT reply in English.';
+  const rw=['kya','hai','karo','mera','tera','tum','hum','aur','nahi','kuch','bhi','yeh','wo','ap','aap','tha','thi','kr','ho','ga','gi','na','ka','ki','ke','sa','se','ma','me','hy','hain','hun','mn','main','mujhe','koi','kaise','kaisa','theek','accha','plz','bta','wala','wali','hoga','krna','btao'];
+  if(t.toLowerCase().split(/\s+/).some(w=>rw.includes(w))) return 'Reply in Roman Urdu ONLY.';
   return 'Reply in English ONLY.';
 }
 
-// ── QUICK SEND ──
-function qs(text){
-  wEl.classList.add('hide');mEl.classList.remove('hide');wShown=false;
-  if(!curId){const id=Date.now().toString();chats.unshift({id,title:text.substring(0,20),history:[]});curId=id;svC();renderC();}
-  iEl.value=text;send();
-}
+function qs(text){wEl.classList.add('hide');mEl.classList.remove('hide');wShown=false;if(!curId){const id=Date.now().toString();chats.unshift({id,title:text.substring(0,20),history:[]});curId=id;svC();renderC();}iEl.value=text;send();}
 
-// ── SEND ──
+// SEND — calls backend /api/chat
 async function send(){
   const text=iEl.value.trim();const img=pendImg;
-  if(!text&&!img)return;
-  iEl.value='';
-
-  if(wShown){
-    wEl.classList.add('hide');mEl.classList.remove('hide');wShown=false;
-    if(!curId){const id=Date.now().toString();chats.unshift({id,title:(text||'Chat').substring(0,20),history:[]});curId=id;svC();renderC();}
-  } else if(!curId){
-    const id=Date.now().toString();chats.unshift({id,title:(text||'Chat').substring(0,20),history:[]});curId=id;svC();renderC();
-  }
-
+  if(!text&&!img)return;iEl.value='';
+  if(wShown){wEl.classList.add('hide');mEl.classList.remove('hide');wShown=false;if(!curId){const id=Date.now().toString();chats.unshift({id,title:(text||'Chat').substring(0,20),history:[]});curId=id;svC();renderC();}}
+  else if(!curId){const id=Date.now().toString();chats.unshift({id,title:(text||'Chat').substring(0,20),history:[]});curId=id;svC();renderC();}
   const chat=chats.find(x=>x.id===curId);
 
   if(img){
@@ -560,89 +476,41 @@ async function send(){
   if(chat){chat.history.push({role:'user',content:userMsg});if(chat.history.length===1){chat.title=userMsg.substring(0,22);renderC();}svC();}
   showT();
 
-  // API KEY CHECK
-  const key=API_KEY.trim();
-  if(!key||key.includes('APNI')||key.includes('YAHAN')||key.includes('LAGAO')||key.length<10){
-    hideT();addMsg('⚠ Groq key add karo! console.groq.com se FREE key lao aur file mein lagao.','bot');return;
-  }
-
   try{
-    const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+    // Call our backend — API key is safe on server!
+    const r=await fetch('/api/chat',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
-      body:JSON.stringify({
-        model:'llama-3.3-70b-versatile',
-        max_tokens:1500,
-        messages:[
-          {role:'system',content:`You are ${botName}, a smart AI assistant made by Rehan. ${langR} Use bullet points and headings for long answers. Be helpful and clear.`},
-          ...(chat?chat.history:[])
-        ]
-      })
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messages:chat?chat.history:[],botName,langRule:langR})
     });
     const d=await r.json();
-    if(d.error){hideT();addMsg('⚠ Error: '+d.error.message,'bot');return;}
-    const reply=d.choices?.[0]?.message?.content||'Something went wrong.';
-    hideT();addMsg(reply,'bot');
-    if(chat){chat.history.push({role:'assistant',content:reply});svC();}
-  }catch(e){hideT();addMsg('⚠ Network error. Check internet!','bot');}
+    if(d.error){hideT();addMsg('⚠ Error: '+d.error,'bot');return;}
+    hideT();addMsg(d.reply,'bot');
+    if(chat){chat.history.push({role:'assistant',content:d.reply});svC();}
+  }catch(e){hideT();addMsg('⚠ Network error!','bot');}
 }
 
-// ── IMAGE ──
+// IMAGE
 function handleF(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{pendImg=ev.target.result;document.getElementById('pthumb').src=ev.target.result;document.getElementById('pname').innerText=f.name;document.getElementById('prev').classList.add('on');};r.readAsDataURL(f);e.target.value='';}
 function rmI(){pendImg=null;document.getElementById('prev').classList.remove('on');}
 
-// ── CAMERA ──
-async function openCam(){
-  try{
-    const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
-    const modal=document.createElement('div');modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;z-index:100';
-    const box=document.createElement('div');box.style.cssText='background:#0d0d0d;border:1px solid #222;border-radius:14px;padding:16px;width:90%;max-width:300px';
-    const vid=document.createElement('video');vid.autoplay=true;vid.playsinline=true;vid.style.cssText='width:100%;height:210px;background:#000;display:block;margin-bottom:12px;object-fit:cover;border-radius:8px';vid.srcObject=s;
-    const btns=document.createElement('div');btns.style.cssText='display:flex;gap:8px';
-    const cap=document.createElement('button');cap.innerText='CAPTURE';cap.style.cssText='flex:1;padding:9px;background:#fff;border:none;border-radius:8px;color:#000;font-family:Share Tech Mono,monospace;font-size:11px;letter-spacing:2px;cursor:pointer';
-    cap.onclick=()=>{const c=document.getElementById('sc');c.width=vid.videoWidth;c.height=vid.videoHeight;c.getContext('2d').drawImage(vid,0,0);const url=c.toDataURL('image/jpeg',0.8);pendImg=url;document.getElementById('pthumb').src=url;document.getElementById('pname').innerText='photo.jpg';document.getElementById('prev').classList.add('on');s.getTracks().forEach(t=>t.stop());document.body.removeChild(modal);};
-    const can=document.createElement('button');can.innerText='CANCEL';can.style.cssText='flex:1;padding:9px;background:none;border:1px solid #333;border-radius:8px;color:#aaa;font-family:Share Tech Mono,monospace;font-size:11px;letter-spacing:2px;cursor:pointer';
-    can.onclick=()=>{s.getTracks().forEach(t=>t.stop());document.body.removeChild(modal);};
-    btns.appendChild(cap);btns.appendChild(can);box.appendChild(vid);box.appendChild(btns);modal.appendChild(box);document.body.appendChild(modal);
-  }catch(e){addMsg('⚠ Camera permission denied!','bot');}
-}
+// CAMERA
+async function openCam(){try{const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});const modal=document.createElement('div');modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;z-index:100';const box=document.createElement('div');box.style.cssText='background:#0d0d0d;border:1px solid #222;border-radius:14px;padding:16px;width:90%;max-width:300px';const vid=document.createElement('video');vid.autoplay=true;vid.playsinline=true;vid.style.cssText='width:100%;height:210px;background:#000;display:block;margin-bottom:12px;object-fit:cover;border-radius:8px';vid.srcObject=s;const btns=document.createElement('div');btns.style.cssText='display:flex;gap:8px';const cap=document.createElement('button');cap.innerText='CAPTURE';cap.style.cssText='flex:1;padding:9px;background:#fff;border:none;border-radius:8px;color:#000;font-family:Share Tech Mono,monospace;font-size:11px;letter-spacing:2px;cursor:pointer';cap.onclick=()=>{const c=document.getElementById('sc');c.width=vid.videoWidth;c.height=vid.videoHeight;c.getContext('2d').drawImage(vid,0,0);const url=c.toDataURL('image/jpeg',0.8);pendImg=url;document.getElementById('pthumb').src=url;document.getElementById('pname').innerText='photo.jpg';document.getElementById('prev').classList.add('on');s.getTracks().forEach(t=>t.stop());document.body.removeChild(modal);};const can=document.createElement('button');can.innerText='CANCEL';can.style.cssText='flex:1;padding:9px;background:none;border:1px solid #333;border-radius:8px;color:#aaa;font-family:Share Tech Mono,monospace;font-size:11px;letter-spacing:2px;cursor:pointer';can.onclick=()=>{s.getTracks().forEach(t=>t.stop());document.body.removeChild(modal);};btns.appendChild(cap);btns.appendChild(can);box.appendChild(vid);box.appendChild(btns);modal.appendChild(box);document.body.appendChild(modal);}catch(e){addMsg('⚠ Camera denied!','bot');}}
 
-// ── VOICE ──
-function togV(){
-  if(!('webkitSpeechRecognition'in window)&&!('SpeechRecognition'in window)){addMsg('⚠ Voice works in Chrome only!','bot');return;}
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  const rec=new SR();rec.continuous=false;rec.interimResults=false;rec.lang='ur-PK';
-  const btn=document.getElementById('micB');
-  rec.onstart=()=>btn.classList.add('rec');
-  rec.onresult=e=>{iEl.value=e.results[0][0].transcript;};
-  rec.onend=()=>btn.classList.remove('rec');
-  rec.start();
-}
+// VOICE
+function togV(){if(!('webkitSpeechRecognition'in window)&&!('SpeechRecognition'in window)){addMsg('⚠ Voice works in Chrome only!','bot');return;}const SR=window.SpeechRecognition||window.webkitSpeechRecognition;const rec=new SR();rec.continuous=false;rec.interimResults=false;rec.lang='ur-PK';const btn=document.getElementById('micB');rec.onstart=()=>btn.classList.add('rec');rec.onresult=e=>{iEl.value=e.results[0][0].transcript;};rec.onend=()=>btn.classList.remove('rec');rec.start();}
 
-// ── CODE ──
+// CODE
 function runC(){const code=document.getElementById('cta').value;const out=document.getElementById('cout');const logs=[];try{const o=console.log;console.log=(...a)=>logs.push(a.join(' '));eval(code);console.log=o;out.style.color='#2ecc71';out.innerText=logs.length?logs.join('\n'):'// ran (no output)';}catch(e){out.style.color='#e74c3c';out.innerText='// error: '+e.message;}}
 function cpC(){navigator.clipboard.writeText(document.getElementById('cta').value);}
 
-// ── SETTINGS ──
+// SETTINGS
 function saveName(){botName=document.getElementById('bnIn').value||'R-Mind';localStorage.setItem('rm-n',botName);document.getElementById('ttl').innerText=botName.toUpperCase();}
 function clearAll(){if(!confirm('Delete all chats?'))return;chats=[];curId=null;svC();renderC();showWlc();}
 
-// ── SIDEBAR ──
-function togSB(){
-  const sb=document.getElementById('sb');
-  const ov=document.getElementById('ov');
-  if(window.innerWidth<=640){
-    const open=sb.classList.contains('mob-open');
-    if(open){sb.classList.remove('mob-open');ov.classList.remove('on');}
-    else{sb.classList.add('mob-open');ov.classList.add('on');}
-  } else {
-    sb.classList.toggle('desk-off');
-  }
-}
-function closeSB(){
-  document.getElementById('sb').classList.remove('mob-open');
-  document.getElementById('ov').classList.remove('on');
-}
+// SIDEBAR
+function togSB(){const sb=document.getElementById('sb');const ov=document.getElementById('ov');if(window.innerWidth<=640){const open=sb.classList.contains('mob-open');if(open){sb.classList.remove('mob-open');ov.classList.remove('on');}else{sb.classList.add('mob-open');ov.classList.add('on');}}else{sb.classList.toggle('desk-off');}}
+function closeSB(){document.getElementById('sb').classList.remove('mob-open');document.getElementById('ov').classList.remove('on');}
 </script>
 </body>
 </html>
