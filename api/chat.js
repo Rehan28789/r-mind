@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { messages, botName, langRule } = req.body;
+    const { messages, botName, langRule, image } = req.body;
 
     // API key safely on server — never exposed to frontend
     const API_KEY = process.env.GROQ_API_KEY;
@@ -23,6 +23,25 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'API key not configured on server' });
     }
 
+    // Build messages array with image support
+    const apiMessages = messages.map((msg, index) => {
+      // If last user message and image exists, make it multimodal
+      if (
+        image &&
+        msg.role === 'user' &&
+        index === messages.length - 1
+      ) {
+        return {
+          role: 'user',
+          content: [
+            { type: 'text', text: msg.content || 'Describe this image in detail.' },
+            { type: 'image_url', image_url: { url: image } }
+          ]
+        };
+      }
+      return msg;
+    });
+
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -30,7 +49,7 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${API_KEY}`
       },
       body: JSON.stringify({
-        model: 'openai/gpt-oss-120b',
+        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
         max_tokens: 1500,
         messages: [
           {
@@ -134,7 +153,7 @@ Jan 1 | Cash A/c Dr | 50,000 |
 
 If asked who made you: say Rehan created you.`
           },
-          ...messages
+          ...apiMessages
         ]
       })
     });
