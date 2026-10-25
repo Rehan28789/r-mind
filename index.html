@@ -481,12 +481,8 @@ async function send(){
     const r=await fetch('/api/chat',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-  messages: chat ? chat.history : [],
-  botName,
-  langRule: langR,
-  image: img || null
-});
+      body:JSON.stringify({messages:chat?chat.history:[],botName,langRule:langR,image:img||null})
+    });
     const d=await r.json();
     if(d.error){hideT();addMsg('⚠ Error: '+d.error,'bot');return;}
     hideT();addMsg(d.reply,'bot');
