@@ -42,6 +42,10 @@ export default async function handler(req, res) {
       return msg;
     });
 
+    // Qwen (vision) only when an image is attached; plain text uses Llama,
+    // which has much higher free-tier limits than Qwen's 1,000 output tokens/min.
+    const hasImage = Boolean(image);
+
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -49,8 +53,9 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${API_KEY}`
       },
       body: JSON.stringify({
-        model: 'qwen/qwen3.8-27b',
-        max_tokens: 1500,
+        model: hasImage ? 'qwen/qwen3.8-27b' : 'llama-3.3-70b-versatile',
+        max_tokens: hasImage ? 800 : 1500, // Qwen free tier allows ~1000 output tokens/min
+        ...(hasImage ? { reasoning_format: 'hidden' } : {}), // hide Qwen's thinking text
         messages: [
           {
             role: 'system',
@@ -77,6 +82,12 @@ If asked who made you: say Rehan created you.`
     });
 
     const data = await response.json();
+
+    if (response.status === 429) {
+      const m = /try again in ([\d.]+)s/i.exec(data?.error?.message || '');
+      const wait = m ? Math.ceil(parseFloat(m[1])) + 1 : 15;
+      return res.status(429).json({ error: `Too many requests right now. Please wait about ${wait} seconds and try again.` });
+    }
 
     if (data.error) {
       return res.status(400).json({ error: data.error.message });
