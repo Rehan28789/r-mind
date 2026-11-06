@@ -16,11 +16,11 @@ export default async function handler(req, res) {
   try {
     const { messages, botName, langRule, image } = req.body;
 
-    // API key safely on server — never exposed to frontend
+    // API key — replace with your actual Groq key
     const API_KEY = process.env.GROQ_API_KEY;
 
     if (!API_KEY) {
-      return res.status(500).json({ error: 'API key not configured on server' });
+      return res.status(500).json({ error: 'GROQ_API_KEY is not set in Vercel environment variables' });
     }
 
     // Build messages array with image support
@@ -49,7 +49,7 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${API_KEY}`
       },
       body: JSON.stringify({
-        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+        model: 'qwen/qwen3.8-27b',
         max_tokens: 1500,
         messages: [
           {
