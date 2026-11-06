@@ -170,6 +170,8 @@ body{font-family:'Rajdhani',sans-serif;background:#000;display:flex;position:fix
 .ib:hover{border-color:#888;color:#fff}
 .ib.rec{border-color:#e74c3c;color:#e74c3c}
 .ib svg{width:13px;height:13px}
+#vlang{height:32px;width:46px;background:#000;border:1px solid var(--br2);border-radius:8px;color:#aaa;font-family:'Share Tech Mono',monospace;font-size:10px;outline:none;cursor:pointer;flex-shrink:0;padding:0 2px;text-align:center}
+#vlang:focus{border-color:#666}
 #ui{flex:1;padding:9px 13px;background:#000;border:1px solid var(--br2);border-radius:10px;color:#fff;font-family:'JetBrains Mono',monospace;font-size:13px;outline:none;transition:border-color 0.2s;min-width:0}
 #ui:focus{border-color:#666}
 #ui::placeholder{color:#333}
@@ -209,6 +211,7 @@ body{font-family:'Rajdhani',sans-serif;background:#000;display:flex;position:fix
   .bub{max-width:92%;font-size:13px;padding:9px 11px}
   #inp-row{gap:5px}
   .ib{width:30px;height:30px}
+  #vlang{height:30px;width:42px}
   #snd{width:32px;height:32px}
   #ui{font-size:12px;padding:8px 10px}
 }
@@ -316,6 +319,7 @@ body{font-family:'Rajdhani',sans-serif;background:#000;display:flex;position:fix
             <button class="ib" onclick="document.getElementById('fin').click()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></button>
             <button class="ib" onclick="openCam()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
             <button class="ib" id="micB" onclick="togV()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+            <select id="vlang" title="Voice language" onchange="localStorage.setItem('rm-vl',this.value)"><option value="en-US">EN</option><option value="ur-PK">UR</option><option value="hi-IN">HI</option><option value="ar-SA">AR</option></select>
             <input id="ui" type="text" placeholder="Message R-Mind..." autocomplete="off" onkeydown="if(event.key==='Enter')send()"/>
             <button id="snd" onclick="send()"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button>
           </div>
@@ -369,6 +373,7 @@ const wEl=document.getElementById('wlc');
 const hSVG=`<svg viewBox="0 0 100 100"><use href="#hl"/></svg>`;
 
 if(botName!=='R-Mind') document.getElementById('bnIn').value=botName;
+const _vl=localStorage.getItem('rm-vl');if(_vl)document.getElementById('vlang').value=_vl;
 
 window.onload=()=>{
   setTimeout(()=>{
@@ -448,10 +453,16 @@ function showP(name,el){document.querySelectorAll('.panel').forEach(p=>p.classLi
 
 // LANGUAGE DETECT
 function detectLang(t){
-  if(/[\u0600-\u06FF]/.test(t)) return 'Reply in Urdu script ONLY.';
+  // Arabic script: Urdu (has Urdu/Persian-only letters) vs Arabic
+  if(/[\u0600-\u06FF]/.test(t)){
+    if(/[ٹڈڑںےھہیکگچپژ]/.test(t)) return 'Reply in Urdu script ONLY.';
+    return 'Reply in Arabic script, in the same language the user wrote in.';
+  }
+  // Other non-Latin scripts (Hindi, Bengali, Thai, Chinese, Japanese, Korean, Russian, Greek...)
+  if(/[\u0370-\u03FF\u0400-\u04FF\u0900-\u097F\u0980-\u09FF\u0A00-\u0A7F\u0E00-\u0E7F\u3040-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]/.test(t)) return "Reply in the same language and script as the user's message.";
   const rw=['kya','hai','karo','mera','tera','tum','hum','aur','nahi','kuch','bhi','yeh','wo','ap','aap','tha','thi','kr','ho','ga','gi','na','ka','ki','ke','sa','se','ma','me','hy','hain','hun','mn','main','mujhe','koi','kaise','kaisa','theek','accha','plz','bta','wala','wali','hoga','krna','btao'];
   if(t.toLowerCase().split(/\s+/).some(w=>rw.includes(w))) return 'Reply in Roman Urdu ONLY.';
-  return 'Reply in English ONLY.';
+  return 'Reply in the same language the user wrote in. If the message is English, reply in English ONLY. Do NOT use Roman Urdu or Urdu unless the user wrote that.';
 }
 
 function qs(text){wEl.classList.add('hide');mEl.classList.remove('hide');wShown=false;if(!curId){const id=Date.now().toString();chats.unshift({id,title:text.substring(0,20),history:[]});curId=id;svC();renderC();}iEl.value=text;send();}
@@ -498,7 +509,18 @@ function rmI(){pendImg=null;document.getElementById('prev').classList.remove('on
 async function openCam(){try{const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});const modal=document.createElement('div');modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;z-index:100';const box=document.createElement('div');box.style.cssText='background:#0d0d0d;border:1px solid #222;border-radius:14px;padding:16px;width:90%;max-width:300px';const vid=document.createElement('video');vid.autoplay=true;vid.playsinline=true;vid.style.cssText='width:100%;height:210px;background:#000;display:block;margin-bottom:12px;object-fit:cover;border-radius:8px';vid.srcObject=s;const btns=document.createElement('div');btns.style.cssText='display:flex;gap:8px';const cap=document.createElement('button');cap.innerText='CAPTURE';cap.style.cssText='flex:1;padding:9px;background:#fff;border:none;border-radius:8px;color:#000;font-family:Share Tech Mono,monospace;font-size:11px;letter-spacing:2px;cursor:pointer';cap.onclick=()=>{const c=document.getElementById('sc');c.width=vid.videoWidth;c.height=vid.videoHeight;c.getContext('2d').drawImage(vid,0,0);const url=c.toDataURL('image/jpeg',0.8);pendImg=url;document.getElementById('pthumb').src=url;document.getElementById('pname').innerText='photo.jpg';document.getElementById('prev').classList.add('on');s.getTracks().forEach(t=>t.stop());document.body.removeChild(modal);};const can=document.createElement('button');can.innerText='CANCEL';can.style.cssText='flex:1;padding:9px;background:none;border:1px solid #333;border-radius:8px;color:#aaa;font-family:Share Tech Mono,monospace;font-size:11px;letter-spacing:2px;cursor:pointer';can.onclick=()=>{s.getTracks().forEach(t=>t.stop());document.body.removeChild(modal);};btns.appendChild(cap);btns.appendChild(can);box.appendChild(vid);box.appendChild(btns);modal.appendChild(box);document.body.appendChild(modal);}catch(e){addMsg('⚠ Camera denied!','bot');}}
 
 // VOICE
-function togV(){if(!('webkitSpeechRecognition'in window)&&!('SpeechRecognition'in window)){addMsg('⚠ Voice works in Chrome only!','bot');return;}const SR=window.SpeechRecognition||window.webkitSpeechRecognition;const rec=new SR();rec.continuous=false;rec.interimResults=false;rec.lang='ur-PK';const btn=document.getElementById('micB');rec.onstart=()=>btn.classList.add('rec');rec.onresult=e=>{iEl.value=e.results[0][0].transcript;};rec.onend=()=>btn.classList.remove('rec');rec.start();}
+function togV(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){addMsg('⚠ Voice works in Chrome only!','bot');return;}
+  const rec=new SR();rec.continuous=false;rec.interimResults=false;
+  rec.lang=document.getElementById('vlang').value; // language chosen next to the mic
+  const btn=document.getElementById('micB');
+  rec.onstart=()=>btn.classList.add('rec');
+  rec.onresult=e=>{iEl.value=e.results[0][0].transcript;};
+  rec.onend=()=>btn.classList.remove('rec');
+  rec.onerror=()=>btn.classList.remove('rec');
+  rec.start();
+}
 
 // CODE
 function runC(){const code=document.getElementById('cta').value;const out=document.getElementById('cout');const logs=[];try{const o=console.log;console.log=(...a)=>logs.push(a.join(' '));eval(code);console.log=o;out.style.color='#2ecc71';out.innerText=logs.length?logs.join('\n'):'// ran (no output)';}catch(e){out.style.color='#e74c3c';out.innerText='// error: '+e.message;}}
