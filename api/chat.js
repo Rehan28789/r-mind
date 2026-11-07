@@ -1,8 +1,38 @@
+// Firebase WEB API key (same apiKey as in index.html). It is a public identifier, not a secret.
+// It is only used to ask Firebase whether a login token is real.
+const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || 'PASTE_FIREBASE_API_KEY';
+
+const verifiedTokens = new Map(); // token -> expiry time (ms), avoids re-checking on every message
+
+async function isLoggedIn(req) {
+  const header = req.headers.authorization || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
+  if (!token) return false;
+
+  const cachedUntil = verifiedTokens.get(token);
+  if (cachedUntil && cachedUntil > Date.now()) return true;
+
+  const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${FIREBASE_API_KEY}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ idToken: token })
+  });
+  if (!r.ok) return false;
+
+  const data = await r.json();
+  const user = data.users && data.users[0];
+  if (!user || user.disabled) return false;
+
+  if (verifiedTokens.size > 500) verifiedTokens.clear();
+  verifiedTokens.set(token, Date.now() + 5 * 60 * 1000);
+  return true;
+}
+
 export default async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   // Handle preflight
   if (req.method === 'OPTIONS') {
@@ -14,6 +44,14 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Only logged-in users may use the AI (protects your Groq key from strangers)
+    if (FIREBASE_API_KEY.includes('PASTE')) {
+      return res.status(500).json({ error: 'Server login check is not set up yet (FIREBASE_API_KEY missing in chat.js).' });
+    }
+    if (!(await isLoggedIn(req))) {
+      return res.status(401).json({ error: 'Please log in to use R-Mind.' });
+    }
+
     const { messages, botName, langRule, image } = req.body;
 
     // API key — replace with your actual Groq key
