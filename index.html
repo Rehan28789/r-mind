@@ -57,6 +57,12 @@ body{font-family:'Rajdhani',sans-serif;background:#000;display:flex;position:fix
 .gst{text-align:center;margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#444;letter-spacing:2px;cursor:pointer;transition:color 0.2s}
 .gst:hover{color:#fff}
 
+.forgot{font-family:'JetBrains Mono',monospace;font-size:10px;color:#777;text-align:right;margin:-4px 0 8px;cursor:pointer;letter-spacing:1px;transition:color .2s}
+.forgot:hover{color:#fff}
+.lerr.ok{color:#2ecc71}
+.lnote{text-align:center;margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:9px;color:#444;letter-spacing:2px}
+#lbtn:disabled{opacity:.6;cursor:wait}
+
 /* APP */
 #app{flex:1;display:flex;width:100%;height:100%;overflow:hidden}
 #app.hide{display:none}
@@ -255,9 +261,10 @@ body{font-family:'Rajdhani',sans-serif;background:#000;display:flex;position:fix
         <div class="tab on" id="tin" onclick="swTab(false)">LOGIN</div>
         <div class="tab" id="tup" onclick="swTab(true)">SIGN UP</div>
       </div>
-      <div class="lf"><label>EMAIL</label><input type="email" id="em" placeholder="you@email.com"/></div>
-      <div class="lf"><label>PASSWORD</label><input type="password" id="pw" placeholder="••••••••"/></div>
-      <div class="lerr" id="lerr">Invalid credentials</div>
+      <div class="lf"><label>EMAIL</label><input type="email" id="em" placeholder="you@email.com" autocomplete="email"/></div>
+      <div class="lf"><label>PASSWORD</label><input type="password" id="pw" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doAuth()"/></div>
+      <div class="forgot" id="forgot" onclick="forgotPw()">Forgot password?</div>
+      <div class="lerr" id="lerr"></div>
       <button class="lbtn" id="lbtn" onclick="doAuth()">LOGIN</button>
       <div class="ldiv"><span>OR</span></div>
       <button class="gbtn" onclick="gAuth()">
@@ -265,7 +272,7 @@ body{font-family:'Rajdhani',sans-serif;background:#000;display:flex;position:fix
         GOOGLE
       </button>
     </div>
-    <div class="gst" onclick="guest()">▶ CONTINUE AS GUEST</div>
+    <div class="lnote">SECURE SIGN-IN · FIREBASE</div>
   </div>
 </div>
 
@@ -361,10 +368,11 @@ console.log("Hello R-Mind!");</textarea>
 
 <script>
 // No API key in frontend — it's safe on server now!
-let chats=JSON.parse(localStorage.getItem('rm-c')||'[]');
+let chats=[]; // loaded per user after login
 let curId=null, pendImg=null, isUp=false, wShown=true;
-let users=JSON.parse(localStorage.getItem('rm-u')||'[]');
-let curUser=JSON.parse(localStorage.getItem('rm-cu')||'null');
+let curUser=null, authReady=false, bootDone=false, shownUid=null, authFail='';
+// remove the old fake-login data (it stored passwords in plain text)
+localStorage.removeItem('rm-u');localStorage.removeItem('rm-cu');
 let botName=localStorage.getItem('rm-n')||'R-Mind';
 
 const mEl=document.getElementById('msgs');
@@ -375,35 +383,101 @@ const hSVG=`<svg viewBox="0 0 100 100"><use href="#hl"/></svg>`;
 if(botName!=='R-Mind') document.getElementById('bnIn').value=botName;
 const _vl=localStorage.getItem('rm-vl');if(_vl)document.getElementById('vlang').value=_vl;
 
-window.onload=()=>{
-  setTimeout(()=>{
-    document.getElementById('boot').classList.add('hide');
-    setTimeout(()=>{document.getElementById('boot').style.display='none';if(curUser)showApp();},500);
-  },2000);
-};
+window.onload=()=>{ setTimeout(()=>{ bootDone=true; route(); },2000); };
+// if the login service never loads (offline / blocked), don't stay on the loading screen forever
+setTimeout(()=>{ if(!authReady){ authReady=true; authFail='Login service could not load. Check your internet and the Firebase setup.'; route(); } },8000);
 
-// AUTH
-function swTab(up){isUp=up;document.getElementById('tin').classList.toggle('on',!up);document.getElementById('tup').classList.toggle('on',up);document.getElementById('lbtn').innerText=up?'CREATE ACCOUNT':'LOGIN';document.getElementById('lerr').classList.remove('on');}
-function doAuth(){
+// ---------- AUTH (Firebase) ----------
+const AUTH_ERR={
+ 'auth/invalid-credential':'Wrong email or password.',
+ 'auth/wrong-password':'Wrong email or password.',
+ 'auth/user-not-found':'No account found with this email.',
+ 'auth/invalid-email':'That email address is not valid.',
+ 'auth/missing-email':'Enter your email first.',
+ 'auth/email-already-in-use':'An account with this email already exists. Try logging in.',
+ 'auth/weak-password':'Password must be at least 6 characters.',
+ 'auth/missing-password':'Enter your password.',
+ 'auth/too-many-requests':'Too many attempts. Please wait a few minutes and try again.',
+ 'auth/network-request-failed':'Network error. Check your internet connection.',
+ 'auth/popup-closed-by-user':'Google sign-in was cancelled.',
+ 'auth/cancelled-popup-request':'Google sign-in was cancelled.',
+ 'auth/popup-blocked':'Your browser blocked the Google popup. Allow popups and try again.',
+ 'auth/unauthorized-domain':'This website is not authorised in Firebase yet (Authentication > Settings > Authorized domains).',
+ 'auth/operation-not-allowed':'This sign-in method is not enabled in Firebase yet (Authentication > Sign-in method).',
+ 'auth/user-disabled':'This account has been disabled.'
+};
+function authMsg(e){return AUTH_ERR[e&&e.code]||('Sign-in failed'+(e&&e.code?' ('+e.code+')':'')+'.');}
+function showErr(msg,ok){const el=document.getElementById('lerr');el.innerText=msg;el.classList.toggle('ok',!!ok);el.classList.add('on');}
+function clearErr(){const el=document.getElementById('lerr');el.classList.remove('on','ok');el.innerText='';}
+function authProblem(){return window.fbConfigMissing?'Login is not set up yet: paste your Firebase config into index.html.':(authFail||'Login service is still loading. Please try again in a moment.');}
+
+function swTab(up){
+  isUp=up;
+  document.getElementById('tin').classList.toggle('on',!up);
+  document.getElementById('tup').classList.toggle('on',up);
+  document.getElementById('lbtn').innerText=up?'CREATE ACCOUNT':'LOGIN';
+  document.getElementById('forgot').style.display=up?'none':'block';
+  document.getElementById('pw').autocomplete=up?'new-password':'current-password';
+  clearErr();
+}
+
+async function doAuth(){
   const em=document.getElementById('em').value.trim();
   const pw=document.getElementById('pw').value;
-  const err=document.getElementById('lerr');
-  if(!em||!pw){err.innerText='Fill all fields';err.classList.add('on');return;}
-  if(isUp){
-    if(users.find(u=>u.em===em)){err.innerText='Email already exists';err.classList.add('on');return;}
-    const u={name:em.split('@')[0],em,pw,av:em[0].toUpperCase()};
-    users.push(u);localStorage.setItem('rm-u',JSON.stringify(users));setUser(u);
-  } else {
-    const u=users.find(u=>u.em===em&&u.pw===pw);
-    if(!u){err.innerText='Wrong email or password';err.classList.add('on');return;}
-    setUser(u);
-  }
+  if(!em||!pw){showErr('Enter your email and password.');return;}
+  if(!window.fbAuth){showErr(authProblem());return;}
+  const btn=document.getElementById('lbtn');btn.disabled=true;clearErr();
+  try{ if(isUp) await window.fbAuth.signup(em,pw); else await window.fbAuth.login(em,pw); }
+  catch(e){ showErr(authMsg(e)); }
+  finally{ btn.disabled=false; }
 }
-function gAuth(){setUser({name:'Rehan',em:'rehan@gmail.com',av:'R'});}
-function guest(){setUser({name:'Guest',em:'',av:'G',g:true});}
-function setUser(u){curUser=u;localStorage.setItem('rm-cu',JSON.stringify(u));document.getElementById('sav').innerText=u.av||u.name[0].toUpperCase();document.getElementById('sun').innerText=(u.name||'GUEST').toUpperCase();showApp();}
-function logout(){curUser=null;localStorage.removeItem('rm-cu');document.getElementById('app').classList.add('hide');document.getElementById('login').classList.remove('hide');document.getElementById('em').value='';document.getElementById('pw').value='';}
-function showApp(){document.getElementById('login').classList.add('hide');document.getElementById('app').classList.remove('hide');renderC();showWlc();}
+async function gAuth(){
+  if(!window.fbAuth){showErr(authProblem());return;}
+  clearErr();
+  try{ await window.fbAuth.google(); }catch(e){ showErr(authMsg(e)); }
+}
+async function forgotPw(){
+  const em=document.getElementById('em').value.trim();
+  if(!em){showErr('Type your email above first, then tap "Forgot password?".');return;}
+  if(!window.fbAuth){showErr(authProblem());return;}
+  try{ await window.fbAuth.reset(em); showErr('If an account exists for this email, a reset link has been sent. Check your inbox and spam.',true); }
+  catch(e){ showErr(authMsg(e)); }
+}
+async function logout(){
+  try{ if(window.fbAuth) await window.fbAuth.logout(); }catch(e){}
+  closeSB();
+}
+
+// called by the Firebase module whenever the login state changes (login, logout, page reload)
+window.onAuthChanged=function(user){
+  authReady=true;
+  curUser=user?{uid:user.uid,em:user.email||'',name:(user.displayName||(user.email||'User').split('@')[0]),av:((user.displayName||user.email||'U')[0]).toUpperCase()}:null;
+  route();
+};
+function route(){
+  if(!bootDone||!authReady) return;
+  const b=document.getElementById('boot');
+  if(!b.classList.contains('hide')){ b.classList.add('hide'); setTimeout(()=>{b.style.display='none';},500); }
+  if(curUser){ if(shownUid!==curUser.uid){ shownUid=curUser.uid; enterApp(); } }
+  else { shownUid=null; leaveApp(); }
+}
+function ckey(){return 'rm-c-'+(curUser?curUser.uid:'none');}
+function enterApp(){
+  try{ chats=JSON.parse(localStorage.getItem(ckey())||'[]'); }catch(e){ chats=[]; }
+  document.getElementById('sav').innerText=curUser.av;
+  document.getElementById('sun').innerText=curUser.name.toUpperCase();
+  document.getElementById('sun').title=curUser.em;
+  document.getElementById('login').classList.add('hide');
+  document.getElementById('app').classList.remove('hide');
+  clearErr();renderC();showWlc();
+}
+function leaveApp(){
+  chats=[];curId=null;mEl.innerHTML='';
+  document.getElementById('app').classList.add('hide');
+  document.getElementById('login').classList.remove('hide');
+  document.getElementById('pw').value='';
+  if(window.fbConfigMissing||authFail) showErr(authProblem());
+}
 function showWlc(){wEl.classList.remove('hide');mEl.classList.add('hide');mEl.innerHTML='';wShown=true;curId=null;}
 
 // MARKDOWN
@@ -440,7 +514,7 @@ function hideT(){const t=document.getElementById('typ');if(t)t.remove();}
 function newChat(){wEl.classList.add('hide');mEl.classList.remove('hide');mEl.innerHTML='';wShown=false;const id=Date.now().toString();chats.unshift({id,title:'New Chat',history:[]});curId=id;svC();renderC();}
 function loadChat(id){const c=chats.find(x=>x.id===id);if(!c)return;wEl.classList.add('hide');mEl.classList.remove('hide');mEl.innerHTML='';wShown=false;curId=id;c.history.forEach(m=>{if(m.role!=='system')addMsg(m.content,m.role==='user'?'u':'bot');});renderC();if(window.innerWidth<=640)closeSB();}
 function delChat(id,e){e.stopPropagation();chats=chats.filter(x=>x.id!==id);if(curId===id)showWlc();svC();renderC();}
-function svC(){localStorage.setItem('rm-c',JSON.stringify(chats));}
+function svC(){if(curUser)localStorage.setItem(ckey(),JSON.stringify(chats));}
 function renderC(){
   const el=document.getElementById('cl');el.innerHTML='';
   chats.forEach(c=>{
@@ -489,12 +563,15 @@ async function send(){
 
   try{
     // Call our backend — API key is safe on server!
+    const token=window.fbAuth?await window.fbAuth.token():null;
+    if(!token){hideT();addMsg('⚠ Session expired. Please log in again.','bot');return;}
     const r=await fetch('/api/chat',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
       body:JSON.stringify({messages:chat?chat.history:[],botName,langRule:langR,image:img||null})
     });
     const d=await r.json();
+    if(r.status===401){hideT();addMsg('⚠ Session expired. Please log in again.','bot');return;}
     if(d.error){hideT();addMsg('⚠ Error: '+d.error,'bot');return;}
     hideT();addMsg(d.reply,'bot');
     if(chat){chat.history.push({role:'assistant',content:d.reply});svC();}
@@ -533,6 +610,49 @@ function clearAll(){if(!confirm('Delete all chats?'))return;chats=[];curId=null;
 // SIDEBAR
 function togSB(){const sb=document.getElementById('sb');const ov=document.getElementById('ov');if(window.innerWidth<=640){const open=sb.classList.contains('mob-open');if(open){sb.classList.remove('mob-open');ov.classList.remove('on');}else{sb.classList.add('mob-open');ov.classList.add('on');}}else{sb.classList.toggle('desk-off');}}
 function closeSB(){document.getElementById('sb').classList.remove('mob-open');document.getElementById('ov').classList.remove('on');}
+</script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+         signInWithPopup, signInWithRedirect, GoogleAuthProvider, sendPasswordResetEmail, signOut }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+// ════════════════════════════════════════════════════════
+//  FIREBASE CONFIG — paste the values from your Firebase
+//  console (Project settings > Your apps > Web app).
+//  These are PUBLIC identifiers, not secrets.
+// ════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "PASTE_FIREBASE_API_KEY",
+  authDomain: "PASTE_PROJECT_ID.firebaseapp.com",
+  projectId: "PASTE_PROJECT_ID",
+  appId: "PASTE_APP_ID"
+};
+
+const configured = !Object.values(firebaseConfig).some(v => String(v).includes("PASTE"));
+if (!configured) {
+  window.fbConfigMissing = true;
+  window.onAuthChanged(null);
+} else {
+  const auth = getAuth(initializeApp(firebaseConfig));
+  window.fbAuth = {
+    login:  (e, p) => signInWithEmailAndPassword(auth, e, p),
+    signup: (e, p) => createUserWithEmailAndPassword(auth, e, p),
+    google: async () => {
+      const provider = new GoogleAuthProvider();
+      try { return await signInWithPopup(auth, provider); }
+      catch (err) {
+        if (err.code === "auth/popup-blocked" || err.code === "auth/operation-not-supported-in-this-environment")
+          return signInWithRedirect(auth, provider);
+        throw err;
+      }
+    },
+    reset:  (e) => sendPasswordResetEmail(auth, e),
+    logout: () => signOut(auth),
+    token:  async () => (auth.currentUser ? auth.currentUser.getIdToken() : null)
+  };
+  onAuthStateChanged(auth, (user) => window.onAuthChanged(user));
+}
 </script>
 </body>
 </html>
