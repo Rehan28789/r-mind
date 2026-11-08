@@ -1,4 +1,4 @@
-// Firebase WEB API key (same apiKey as in index.html). It is a public identifier, not a secret.
+\// Firebase WEB API key (same apiKey as in index.html). It is a public identifier, not a secret.
 // It is only used to ask Firebase whether a login token is real.
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || 'AIzaSyCiuSsBScIA4BIQtziLfanhULx3nX0NMvQ';
 
@@ -80,8 +80,8 @@ export default async function handler(req, res) {
       return msg;
     });
 
-    // Qwen (vision) only when an image is attached; plain text uses Llama,
-    // which has much higher free-tier limits than Qwen's 1,000 output tokens/min.
+    // Qwen (vision) only when an image is attached; plain text uses GPT-OSS.
+    // (llama-3.3-70b-versatile is no longer available on the free plan.)
     const hasImage = Boolean(image);
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -91,9 +91,10 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${API_KEY}`
       },
       body: JSON.stringify({
-        model: hasImage ? 'qwen/qwen3.8-27b' : 'llama-3.3-70b-versatile',
+        model: hasImage ? 'qwen/qwen3.8-27b' : 'openai/gpt-oss-120b',
         max_tokens: hasImage ? 800 : 1500, // Qwen free tier allows ~1000 output tokens/min
-        ...(hasImage ? { reasoning_format: 'hidden' } : {}), // hide Qwen's thinking text
+        // Qwen: switch thinking off (saves output tokens). GPT-OSS: short thinking, and don't send it back.
+        ...(hasImage ? { reasoning_effort: 'none' } : { reasoning_effort: 'low', include_reasoning: false }),
         messages: [
           {
             role: 'system',
