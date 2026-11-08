@@ -1,4 +1,4 @@
-\// Firebase WEB API key (same apiKey as in index.html). It is a public identifier, not a secret.
+// Firebase WEB API key (same apiKey as in index.html). It is a public identifier, not a secret.
 // It is only used to ask Firebase whether a login token is real.
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || 'AIzaSyCiuSsBScIA4BIQtziLfanhULx3nX0NMvQ';
 
@@ -31,12 +31,24 @@ async function isLoggedIn(req) {
 export default async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   // Handle preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
+  }
+
+  // Health check: open https://YOUR-SITE/api/chat in a browser. Shows no secrets, only yes/no flags.
+  if (req.method === 'GET') {
+    return res.status(200).json({
+      ok: true,
+      node: process.version,
+      groqKeySet: Boolean(process.env.GROQ_API_KEY),
+      loginCheckSet: !FIREBASE_API_KEY.includes('PASTE'),
+      textModel: 'openai/gpt-oss-120b',
+      imageModel: 'qwen/qwen3.8-27b'
+    });
   }
 
   if (req.method !== 'POST') {
