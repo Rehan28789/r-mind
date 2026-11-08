@@ -581,7 +581,7 @@ async function send(){
       const why=r.status===413?'The image is too large. Try a smaller photo.'
         :r.status===404?'The server function /api/chat was not found. Make sure api/chat.js is in your GitHub repo (inside the api folder) and redeploy.'
         :r.status===504?'The server took too long to answer. Please try again.'
-        :'The server sent an unexpected reply (HTTP '+r.status+'). Open Vercel > your project > Logs to see the cause.';
+        :'The server sent an unexpected reply (HTTP '+r.status+')'+(raw.trim()?'. It said: "'+raw.replace(/\s+/g,' ').trim().slice(0,160)+'"':' with an empty body')+'. Open Vercel > your project > Logs for the cause.';
       addMsg('⚠ '+why,'bot');return;
     }
     if(d.error){hideT();addMsg('⚠ Error: '+d.error,'bot');return;}
