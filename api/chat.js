@@ -1,6 +1,6 @@
 // Firebase WEB API key (same apiKey as in index.html). It is a public identifier, not a secret.
 // It is only used to ask Firebase whether a login token is real.
-const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || 'PASTE_FIREBASE_API_KEY';
+const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || 'AIzaSyCiuSsBScIA4BIQtziLfanhULx3nX0NMvQ';
 
 const verifiedTokens = new Map(); // token -> expiry time (ms), avoids re-checking on every message
 
