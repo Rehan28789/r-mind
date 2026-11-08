@@ -565,21 +565,50 @@ async function send(){
     // Call our backend — API key is safe on server!
     const token=window.fbAuth?await window.fbAuth.token():null;
     if(!token){hideT();addMsg('⚠ Session expired. Please log in again.','bot');return;}
-    const r=await fetch('/api/chat',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-      body:JSON.stringify({messages:chat?chat.history:[],botName,langRule:langR,image:img||null})
-    });
-    const d=await r.json();
+    let r;
+    try{
+      r=await fetch('/api/chat',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+        body:JSON.stringify({messages:chat?chat.history:[],botName,langRule:langR,image:img||null})
+      });
+    }catch(e){ hideT();addMsg('⚠ Could not reach the server. Check your internet connection and try again.','bot');return; }
+    const raw=await r.text(); let d=null;
+    try{ d=JSON.parse(raw); }catch(e){}
     if(r.status===401){hideT();addMsg('⚠ Session expired. Please log in again.','bot');return;}
+    if(!d){
+      hideT();
+      const why=r.status===413?'The image is too large. Try a smaller photo.'
+        :r.status===404?'The server function /api/chat was not found. Make sure api/chat.js is in your GitHub repo (inside the api folder) and redeploy.'
+        :r.status===504?'The server took too long to answer. Please try again.'
+        :'The server sent an unexpected reply (HTTP '+r.status+'). Open Vercel > your project > Logs to see the cause.';
+      addMsg('⚠ '+why,'bot');return;
+    }
     if(d.error){hideT();addMsg('⚠ Error: '+d.error,'bot');return;}
+    if(!d.reply){hideT();addMsg('⚠ The AI sent an empty reply. Please try again.','bot');return;}
     hideT();addMsg(d.reply,'bot');
     if(chat){chat.history.push({role:'assistant',content:d.reply});svC();}
-  }catch(e){hideT();addMsg('⚠ Network error!','bot');}
+  }catch(e){hideT();addMsg('⚠ Something went wrong: '+(e&&e.message?e.message:e),'bot');}
 }
 
 // IMAGE
-function handleF(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{pendImg=ev.target.result;document.getElementById('pthumb').src=ev.target.result;document.getElementById('pname').innerText=f.name;document.getElementById('prev').classList.add('on');};r.readAsDataURL(f);e.target.value='';}
+function setPend(url,name){pendImg=url;document.getElementById('pthumb').src=url;document.getElementById('pname').innerText=name;document.getElementById('prev').classList.add('on');}
+function handleF(e){
+  const f=e.target.files[0];if(!f)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const im=new Image();
+    im.onload=()=>{ // scale down to max 1280px and re-encode as JPEG so the upload stays small
+      const k=Math.min(1,1280/Math.max(im.width,im.height));
+      const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);
+      c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+      setPend(c.toDataURL('image/jpeg',0.8),f.name);
+    };
+    im.onerror=()=>setPend(ev.target.result,f.name); // if it can't be decoded, send it as-is
+    im.src=ev.target.result;
+  };
+  reader.readAsDataURL(f);e.target.value='';
+}
 function rmI(){pendImg=null;document.getElementById('prev').classList.remove('on');}
 
 // CAMERA
