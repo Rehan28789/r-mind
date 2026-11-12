@@ -63,6 +63,20 @@ body{font-family:'Rajdhani',sans-serif;background:#000;display:flex;position:fix
 .lnote{text-align:center;margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:9px;color:#444;letter-spacing:2px}
 #lbtn:disabled{opacity:.6;cursor:wait}
 
+.acts{display:flex;gap:6px;margin-top:5px;flex-wrap:wrap}
+.act{background:none;border:1px solid #2a2a2a;border-radius:6px;color:#777;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;padding:3px 8px;cursor:pointer;transition:all .15s}
+.act:hover{border-color:#888;color:#fff}
+.act.regen{display:none}
+.act.regen.show{display:inline-block}
+.cr-r{opacity:0;background:none;border:none;color:#555;cursor:pointer;padding:0;flex-shrink:0}
+.cr:hover .cr-r{opacity:1}
+.cr-r:hover{color:#fff}
+.cr-in{flex:1;min-width:0;background:#000;border:1px solid #555;border-radius:5px;color:#fff;font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 5px;outline:none}
+@media (hover:none){.cr-d,.cr-r{opacity:1}}
+#verify{position:fixed;inset:0;background:#000;z-index:450;display:flex;align-items:center;justify-content:center;padding:20px}
+#verify.hide{display:none}
+.vtext{font-family:'Rajdhani',sans-serif;font-size:14px;color:#999;line-height:1.6;margin-bottom:14px}
+
 /* APP */
 #app{flex:1;display:flex;width:100%;height:100%;overflow:hidden}
 #app.hide{display:none}
@@ -276,6 +290,24 @@ body{font-family:'Rajdhani',sans-serif;background:#000;display:flex;position:fix
   </div>
 </div>
 
+<!-- EMAIL VERIFICATION -->
+<div id="verify" class="hide">
+  <div class="lw">
+    <div class="lh">
+      <div class="lh-logo"><svg viewBox="0 0 100 100"><use href="#hl"/></svg></div>
+      <div class="lh-title">VERIFY EMAIL</div>
+      <div class="lh-sub" id="vemail"></div>
+    </div>
+    <div class="lc">
+      <div class="vtext">We sent a verification link to your email. Open it, then come back here and press the button below. Check your spam folder too.</div>
+      <div class="lerr" id="verr"></div>
+      <button class="lbtn" id="vcont" onclick="verifyContinue()">I'VE VERIFIED · CONTINUE</button>
+      <button class="gbtn" style="margin-top:8px" onclick="verifyResend()">RESEND EMAIL</button>
+      <button class="gbtn" style="margin-top:8px" onclick="logout()">LOG OUT</button>
+    </div>
+  </div>
+</div>
+
 <div id="app" class="hide">
   <div id="sb">
     <div class="sb-hd">
@@ -328,7 +360,7 @@ body{font-family:'Rajdhani',sans-serif;background:#000;display:flex;position:fix
             <button class="ib" id="micB" onclick="togV()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
             <select id="vlang" title="Voice language" onchange="localStorage.setItem('rm-vl',this.value)"><option value="en-US">EN</option><option value="ur-PK">UR</option><option value="hi-IN">HI</option><option value="ar-SA">AR</option></select>
             <input id="ui" type="text" placeholder="Message R-Mind..." autocomplete="off" onkeydown="if(event.key==='Enter')send()"/>
-            <button id="snd" onclick="send()"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button>
+            <button id="snd" onclick="sendOrStop()" title="Send"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button>
           </div>
           <div id="fn">R-MIND v3.0 · BY <span>REHAN</span></div>
         </div>
@@ -357,6 +389,13 @@ console.log("Hello R-Mind!");</textarea>
             <button class="sbtn" onclick="saveName()">SAVE</button>
           </div>
           <button class="dbtn" onclick="clearAll()">⚠ CLEAR ALL CHATS</button>
+          <div class="sbox" style="margin-top:14px;border-color:#3a1f1f">
+            <label>DELETE ACCOUNT</label>
+            <div class="vtext" style="margin-bottom:10px">Permanently deletes your login account and erases the chats saved on this device. This cannot be undone.</div>
+            <input class="sinp" type="password" id="delPw" placeholder="Your password (email accounts)" autocomplete="current-password"/>
+            <button class="dbtn" style="margin-top:0" onclick="deleteAccount()">⚠ DELETE MY ACCOUNT</button>
+            <div class="lerr" id="derr"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -370,7 +409,8 @@ console.log("Hello R-Mind!");</textarea>
 // No API key in frontend — it's safe on server now!
 let chats=[]; // loaded per user after login
 let curId=null, pendImg=null, isUp=false, wShown=true;
-let curUser=null, authReady=false, bootDone=false, shownUid=null, authFail='';
+let busy=false, abortCtl=null, lastImg=null, lastImgChatId=null, speakId=0, speakingBtn=null, lastResend=0;
+let curUser=null, authReady=false, bootDone=false, shownState=null, authFail='';
 // remove the old fake-login data (it stored passwords in plain text)
 localStorage.removeItem('rm-u');localStorage.removeItem('rm-cu');
 let botName=localStorage.getItem('rm-n')||'R-Mind';
@@ -404,7 +444,8 @@ const AUTH_ERR={
  'auth/popup-blocked':'Your browser blocked the Google popup. Allow popups and try again.',
  'auth/unauthorized-domain':'This website is not authorised in Firebase yet (Authentication > Settings > Authorized domains).',
  'auth/operation-not-allowed':'This sign-in method is not enabled in Firebase yet (Authentication > Sign-in method).',
- 'auth/user-disabled':'This account has been disabled.'
+ 'auth/user-disabled':'This account has been disabled.',
+ 'auth/requires-recent-login':'For security, please log out, log in again, then delete your account.'
 };
 function authMsg(e){return AUTH_ERR[e&&e.code]||('Sign-in failed'+(e&&e.code?' ('+e.code+')':'')+'.');}
 function showErr(msg,ok){const el=document.getElementById('lerr');el.innerText=msg;el.classList.toggle('ok',!!ok);el.classList.add('on');}
@@ -448,42 +489,77 @@ async function logout(){
   closeSB();
 }
 
-// called by the Firebase module whenever the login state changes (login, logout, page reload)
+// called by the Firebase module whenever the login state changes (login, logout, page reload, email verified)
 window.onAuthChanged=function(user){
   authReady=true;
-  curUser=user?{uid:user.uid,em:user.email||'',name:(user.displayName||(user.email||'User').split('@')[0]),av:((user.displayName||user.email||'U')[0]).toUpperCase()}:null;
+  curUser=user?{uid:user.uid,em:user.email||'',name:(user.displayName||(user.email||'User').split('@')[0]),av:((user.displayName||user.email||'U')[0]).toUpperCase(),verified:!!user.emailVerified,isPw:(user.providerData||[]).some(p=>p.providerId==='password')}:null;
   route();
 };
 function route(){
   if(!bootDone||!authReady) return;
   const b=document.getElementById('boot');
   if(!b.classList.contains('hide')){ b.classList.add('hide'); setTimeout(()=>{b.style.display='none';},500); }
-  if(curUser){ if(shownUid!==curUser.uid){ shownUid=curUser.uid; enterApp(); } }
-  else { shownUid=null; leaveApp(); }
+  const state=!curUser?'out':(curUser.verified?'in:':'unverified:')+curUser.uid;
+  if(state===shownState) return;
+  shownState=state;
+  if(state==='out') leaveApp(); else if(curUser.verified) enterApp(); else showVerify();
 }
 function ckey(){return 'rm-c-'+(curUser?curUser.uid:'none');}
+function setMsg(id,msg,ok){
+  const el=document.getElementById(id);
+  if(!msg){el.classList.remove('on','ok');el.innerText='';return;}
+  el.innerText=msg;el.classList.toggle('ok',!!ok);el.classList.add('on');
+}
 function enterApp(){
   try{ chats=JSON.parse(localStorage.getItem(ckey())||'[]'); }catch(e){ chats=[]; }
   document.getElementById('sav').innerText=curUser.av;
   document.getElementById('sun').innerText=curUser.name.toUpperCase();
   document.getElementById('sun').title=curUser.em;
+  document.getElementById('delPw').value='';document.getElementById('delPw').style.display=curUser.isPw?'':'none';
   document.getElementById('login').classList.add('hide');
+  document.getElementById('verify').classList.add('hide');
   document.getElementById('app').classList.remove('hide');
-  clearErr();renderC();showWlc();
+  clearErr();setMsg('derr','');renderC();showWlc();
 }
 function leaveApp(){
-  chats=[];curId=null;mEl.innerHTML='';
+  stopSpeak();chats=[];curId=null;mEl.innerHTML='';
   document.getElementById('app').classList.add('hide');
+  document.getElementById('verify').classList.add('hide');
   document.getElementById('login').classList.remove('hide');
-  document.getElementById('pw').value='';
+  document.getElementById('pw').value='';document.getElementById('delPw').value='';
   if(window.fbConfigMissing||authFail) showErr(authProblem());
 }
-function showWlc(){wEl.classList.remove('hide');mEl.classList.add('hide');mEl.innerHTML='';wShown=true;curId=null;}
+function showVerify(){
+  stopSpeak();chats=[];curId=null;mEl.innerHTML='';
+  document.getElementById('app').classList.add('hide');
+  document.getElementById('login').classList.add('hide');
+  document.getElementById('verify').classList.remove('hide');
+  document.getElementById('vemail').innerText=curUser.em;
+  setMsg('verr','');
+}
+async function verifyContinue(){
+  if(!window.fbAuth){setMsg('verr',authProblem());return;}
+  const btn=document.getElementById('vcont');btn.disabled=true;setMsg('verr','');
+  try{
+    const ok=await window.fbAuth.reloadUser();
+    if(!ok) setMsg('verr','Not verified yet. Open the link in your email first (check spam), then press this button again.');
+  }catch(e){ setMsg('verr',authMsg(e)); }
+  finally{ btn.disabled=false; }
+}
+async function verifyResend(){
+  const wait=30000-(Date.now()-lastResend);
+  if(wait>0){setMsg('verr','Please wait '+Math.ceil(wait/1000)+' seconds before sending again.');return;}
+  if(!window.fbAuth){setMsg('verr',authProblem());return;}
+  try{ await window.fbAuth.sendVerify(); lastResend=Date.now(); setMsg('verr','Verification email sent. Check your inbox and spam folder.',true); }
+  catch(e){ setMsg('verr',authMsg(e)); }
+}
+function showWlc(){stopSpeak();wEl.classList.remove('hide');mEl.classList.add('hide');mEl.innerHTML='';wShown=true;curId=null;}
 
 // MARKDOWN
 function md(t){
+  t=String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); // escape first: AI text must never become real HTML
   return t
-    .replace(/```(\w+)?\n?([\s\S]*?)```/g,(_,l,c)=>`<pre><code>${c.replace(/</g,'&lt;')}</code></pre>`)
+    .replace(/```(\w+)?\n?([\s\S]*?)```/g,(_,l,c)=>`<pre><code>${c}</code></pre>`)
     .replace(/`([^`]+)`/g,'<code>$1</code>')
     .replace(/^## (.+)$/gm,'<h2>$1</h2>').replace(/^# (.+)$/gm,'<h1>$1</h1>')
     .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
@@ -495,32 +571,125 @@ function md(t){
 }
 function ts(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
 
-function addMsg(text,who,isH=false){
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function addMsg(text,who,isH=false,opts={}){
   const wrap=document.createElement('div');wrap.className='mw '+who;
-  const ct=(who==='bot'&&!isH)?md(text):text;
+  const ct=who==='bot'?(isH?text:md(text)):(isH?text:esc(text));
   const av=(curUser&&(curUser.av||curUser.name[0]))||'G';
   if(who==='bot'){
     wrap.innerHTML=`<div class="bav">${hSVG}</div><div style="flex:1;min-width:0;overflow:hidden"><div class="bub">${ct}</div><div class="mts">${ts()}</div></div>`;
+    if(opts.ai){ wrap.dataset.ai='1'; wrap.querySelector('.mts').insertAdjacentElement('afterend',makeActions(text)); }
   } else {
-    wrap.innerHTML=`<div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-end"><div class="bub">${ct}</div><div class="mts">${ts()}</div></div><div class="uav">${av.toUpperCase()}</div>`;
+    wrap.innerHTML=`<div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-end"><div class="bub">${ct}</div><div class="mts">${ts()}</div></div><div class="uav">${esc(av.toUpperCase())}</div>`;
   }
   mEl.appendChild(wrap);mEl.scrollTop=mEl.scrollHeight;
+  if(opts.ai) refreshRegen();
+  return wrap;
+}
+
+// ---- buttons under every AI answer ----
+function makeActions(text){
+  const bar=document.createElement('div');bar.className='acts';
+  const mk=(label,title,fn,cls)=>{const b=document.createElement('button');b.type='button';b.className='act'+(cls?' '+cls:'');b.textContent=label;b.title=title;b.onclick=()=>fn(b);return b;};
+  bar.appendChild(mk('COPY','Copy this answer',b=>copyText(text,b)));
+  if('speechSynthesis' in window) bar.appendChild(mk('SPEAK','Read this answer aloud',b=>speakToggle(text,b)));
+  bar.appendChild(mk('REGENERATE','Get a different answer',()=>regenerate(),'regen'));
+  return bar;
+}
+function refreshRegen(){ // only the newest AI answer shows REGENERATE
+  const all=[...mEl.querySelectorAll('.mw.bot[data-ai="1"]')];
+  all.forEach((w,i)=>{const b=w.querySelector('.regen');if(b)b.classList.toggle('show',i===all.length-1);});
+}
+async function copyText(text,btn){
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText) await navigator.clipboard.writeText(text);
+    else throw new Error('no clipboard api');
+  }catch(e){
+    const t=document.createElement('textarea');t.value=text;t.style.position='fixed';t.style.opacity='0';
+    document.body.appendChild(t);t.select();try{document.execCommand('copy');}catch(_){}t.remove();
+  }
+  const old=btn.textContent;btn.textContent='COPIED';setTimeout(()=>{btn.textContent=old;},1500);
+}
+
+// ---- read an answer aloud ----
+function stripForSpeech(t){
+  return t.replace(/```[\s\S]*?```/g,' code block. ').replace(/`([^`]*)`/g,'$1').replace(/^#{1,6}\s*/gm,'')
+          .replace(/\*\*|__|\*/g,'').replace(/^\s*[-*]\s+/gm,'').replace(/\|/g,' ')
+          .replace(/https?:\/\/\S+/g,' link ').replace(/\s+/g,' ').trim();
+}
+function speechLang(t){
+  if(/[\u0600-\u06FF]/.test(t)) return /[ٹڈڑںےھہیکگچپژ]/.test(t)?'ur-PK':'ar-SA';
+  if(/[\u0900-\u097F]/.test(t)) return 'hi-IN';
+  return 'en-US';
+}
+function chunkText(t){ // browsers stop long speech after ~15 s, so speak it in short pieces
+  const parts=t.match(/[^.!?۔\n]+[.!?۔]*\s*/g)||[t];
+  const out=[];let cur='';
+  const push=s=>{ if((cur+s).length>180&&cur){out.push(cur);cur='';} cur+=s; };
+  for(const p of parts){ if(p.length>220) p.split(/(\s+)/).forEach(push); else push(p); }
+  if(cur.trim()) out.push(cur);
+  return out;
+}
+function stopSpeak(){
+  speakId++;
+  try{ if('speechSynthesis' in window) window.speechSynthesis.cancel(); }catch(e){}
+  if(speakingBtn){speakingBtn.textContent='SPEAK';speakingBtn=null;}
+}
+function speakToggle(text,btn){
+  if(!('speechSynthesis' in window)) return;
+  if(speakingBtn===btn){ stopSpeak(); return; }
+  stopSpeak();
+  const clean=stripForSpeech(text); if(!clean) return;
+  const lang=speechLang(clean), chunks=chunkText(clean), myId=++speakId;
+  speakingBtn=btn;btn.textContent='STOP';
+  chunks.forEach((c,i)=>{
+    const u=new SpeechSynthesisUtterance(c);u.lang=lang;
+    if(i===chunks.length-1){ u.onend=u.onerror=()=>{ if(speakId===myId&&speakingBtn===btn){btn.textContent='SPEAK';speakingBtn=null;} }; }
+    window.speechSynthesis.speak(u);
+  });
 }
 
 function showT(){const w=document.createElement('div');w.className='tw';w.id='typ';w.innerHTML=`<div class="bav">${hSVG}</div><div class="tbub"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;mEl.appendChild(w);mEl.scrollTop=mEl.scrollHeight;}
 function hideT(){const t=document.getElementById('typ');if(t)t.remove();}
 
 // CHATS
-function newChat(){wEl.classList.add('hide');mEl.classList.remove('hide');mEl.innerHTML='';wShown=false;const id=Date.now().toString();chats.unshift({id,title:'New Chat',history:[]});curId=id;svC();renderC();}
-function loadChat(id){const c=chats.find(x=>x.id===id);if(!c)return;wEl.classList.add('hide');mEl.classList.remove('hide');mEl.innerHTML='';wShown=false;curId=id;c.history.forEach(m=>{if(m.role!=='system')addMsg(m.content,m.role==='user'?'u':'bot');});renderC();if(window.innerWidth<=640)closeSB();}
-function delChat(id,e){e.stopPropagation();chats=chats.filter(x=>x.id!==id);if(curId===id)showWlc();svC();renderC();}
+const CHAT_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+const EDIT_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+const DEL_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>';
+function newChat(){stopSpeak();wEl.classList.add('hide');mEl.classList.remove('hide');mEl.innerHTML='';wShown=false;const id=Date.now().toString();chats.unshift({id,title:'New Chat',history:[]});curId=id;svC();renderC();}
+function loadChat(id){
+  const c=chats.find(x=>x.id===id);if(!c)return;
+  stopSpeak();wEl.classList.add('hide');mEl.classList.remove('hide');mEl.innerHTML='';wShown=false;curId=id;
+  c.history.forEach(m=>{if(m.role!=='system')addMsg(m.content,m.role==='user'?'u':'bot',false,{ai:m.role==='assistant'});});
+  renderC();if(window.innerWidth<=640)closeSB();
+}
+function delChat(id){chats=chats.filter(x=>x.id!==id);if(curId===id)showWlc();svC();renderC();}
 function svC(){if(curUser)localStorage.setItem(ckey(),JSON.stringify(chats));}
+function renameChat(id){
+  const c=chats.find(x=>x.id===id);if(!c)return;
+  const row=[...document.querySelectorAll('#cl .cr')].find(r=>r.dataset.id===id);if(!row)return;
+  const span=row.querySelector('.cr-t');if(!span)return;
+  const inp=document.createElement('input');inp.className='cr-in';inp.value=c.title;inp.maxLength=40;
+  span.replaceWith(inp);inp.focus();inp.select();
+  let done=false;
+  const finish=save=>{ if(done)return;done=true;const v=inp.value.trim(); if(save&&v){c.title=v.slice(0,40);c.custom=true;svC();} renderC(); };
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();finish(true);} else if(e.key==='Escape'){finish(false);} e.stopPropagation(); });
+  inp.addEventListener('blur',()=>finish(true));
+  inp.addEventListener('click',e=>e.stopPropagation());
+}
 function renderC(){
   const el=document.getElementById('cl');el.innerHTML='';
   chats.forEach(c=>{
-    const d=document.createElement('button');d.className='cr'+(c.id===curId?' on':'');
-    d.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="cr-t">${c.title}</span><button class="cr-d" onclick="delChat('${c.id}',event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>`;
-    d.onclick=()=>loadChat(c.id);el.appendChild(d);
+    const d=document.createElement('div');d.className='cr'+(c.id===curId?' on':'');d.dataset.id=c.id;d.setAttribute('role','button');d.tabIndex=0;
+    d.innerHTML=CHAT_ICON+'<span class="cr-t"></span>';
+    d.querySelector('.cr-t').textContent=c.title; // textContent: a chat name can never turn into HTML
+    const mk=(cls,title,icon,fn)=>{const b=document.createElement('button');b.type='button';b.className=cls;b.title=title;b.innerHTML=icon;b.onclick=e=>{e.stopPropagation();fn();};return b;};
+    d.appendChild(mk('cr-r','Rename',EDIT_ICON,()=>renameChat(c.id)));
+    d.appendChild(mk('cr-d','Delete',DEL_ICON,()=>delChat(c.id)));
+    d.onclick=()=>loadChat(c.id);
+    d.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target===d)loadChat(c.id);});
+    el.appendChild(d);
   });
 }
 function showP(name,el){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));document.getElementById('p-'+name).classList.add('on');document.querySelectorAll('.ni').forEach(i=>i.classList.remove('on'));if(el)el.classList.add('on');if(window.innerWidth<=640)closeSB();}
@@ -539,56 +708,129 @@ function detectLang(t){
   return 'Reply in the same language the user wrote in. If the message is English, reply in English ONLY. Do NOT use Roman Urdu or Urdu unless the user wrote that.';
 }
 
-function qs(text){wEl.classList.add('hide');mEl.classList.remove('hide');wShown=false;if(!curId){const id=Date.now().toString();chats.unshift({id,title:text.substring(0,20),history:[]});curId=id;svC();renderC();}iEl.value=text;send();}
+function makeTitle(t){
+  t=String(t).replace(/\s+/g,' ').trim();
+  if(t.length<=32) return t||'New Chat';
+  const cut=t.slice(0,32),sp=cut.lastIndexOf(' ');
+  return (sp>16?cut.slice(0,sp):cut)+'…';
+}
+function ensureChat(firstText){
+  if(wShown){wEl.classList.add('hide');mEl.classList.remove('hide');wShown=false;}
+  if(!curId){const id=Date.now().toString();chats.unshift({id,title:makeTitle(firstText||'New Chat'),history:[]});curId=id;svC();renderC();}
+  return chats.find(x=>x.id===curId);
+}
+function qs(text){iEl.value=text;send();}
+
+const SEND_ICON='<svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>';
+const STOP_ICON='<svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
+function setBusy(b){busy=b;const s=document.getElementById('snd');s.innerHTML=b?STOP_ICON:SEND_ICON;s.title=b?'Stop':'Send';}
+function sendOrStop(){ if(busy){ if(abortCtl) abortCtl.abort(); return; } send(); }
 
 // SEND — calls backend /api/chat
 async function send(){
+  if(busy) return;
   const text=iEl.value.trim();const img=pendImg;
   if(!text&&!img)return;iEl.value='';
-  if(wShown){wEl.classList.add('hide');mEl.classList.remove('hide');wShown=false;if(!curId){const id=Date.now().toString();chats.unshift({id,title:(text||'Chat').substring(0,20),history:[]});curId=id;svC();renderC();}}
-  else if(!curId){const id=Date.now().toString();chats.unshift({id,title:(text||'Chat').substring(0,20),history:[]});curId=id;svC();renderC();}
-  const chat=chats.find(x=>x.id===curId);
-
+  const chat=ensureChat(text);
   if(img){
     const av=(curUser&&(curUser.av||curUser.name[0]))||'G';
     const wrap=document.createElement('div');wrap.className='mw u';
-    wrap.innerHTML=`<div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-end"><img style="max-width:180px;border-radius:10px;display:block;margin-bottom:4px" src="${img}" alt=""/>${text?`<div class="bub">${text}</div>`:''}<div class="mts">${ts()}</div></div><div class="uav">${av.toUpperCase()}</div>`;
+    wrap.innerHTML=`<div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-end"><img style="max-width:180px;border-radius:10px;display:block;margin-bottom:4px" src="${img}" alt=""/>${text?`<div class="bub">${esc(text)}</div>`:''}<div class="mts">${ts()}</div></div><div class="uav">${esc(av.toUpperCase())}</div>`;
     mEl.appendChild(wrap);mEl.scrollTop=mEl.scrollHeight;rmI();
   } else {addMsg(text,'u');}
-
   const userMsg=text||(img?'Describe this image':'');
-  const langR=detectLang(userMsg);
-  if(chat){chat.history.push({role:'user',content:userMsg});if(chat.history.length===1){chat.title=userMsg.substring(0,22);renderC();}svC();}
-  showT();
+  chat.history.push(img?{role:'user',content:userMsg,img:true}:{role:'user',content:userMsg});
+  if(chat.history.length===1&&!chat.custom){chat.title=makeTitle(userMsg);renderC();}
+  svC();
+  lastImg=img||null;lastImgChatId=chat.id; // kept in memory only, so REGENERATE can re-send the photo
+  await requestReply(chat,userMsg,img);
+}
 
+// Ask the server for a reply to the last user message in `chat`. Returns true if an answer was shown.
+async function requestReply(chat,userMsg,img){
+  const here=()=>curId===chat.id; // is this chat still the one on screen?
+  const say=(txt,opts)=>{ if(here()) addMsg(txt,'bot',false,opts||{}); };
+  setBusy(true);showT();abortCtl=new AbortController();
+  try{ return await doRequest(chat,userMsg,img,say); }
+  catch(e){
+    hideT();
+    if(e&&e.name==='AbortError') say('⏹ Stopped.'); else say('⚠ Something went wrong: '+(e&&e.message?e.message:e));
+    return false;
+  }
+  finally{ setBusy(false);abortCtl=null; }
+}
+async function doRequest(chat,userMsg,img,say){
+  const langR=detectLang(userMsg);
+  const token=window.fbAuth?await window.fbAuth.token():null;
+  if(!token){hideT();say('⚠ Session expired. Please log in again.');return false;}
+  let r;
   try{
-    // Call our backend — API key is safe on server!
-    const token=window.fbAuth?await window.fbAuth.token():null;
-    if(!token){hideT();addMsg('⚠ Session expired. Please log in again.','bot');return;}
-    let r;
-    try{
-      r=await fetch('/api/chat',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-        body:JSON.stringify({messages:chat?chat.history:[],botName,langRule:langR,image:img||null})
-      });
-    }catch(e){ hideT();addMsg('⚠ Could not reach the server. Check your internet connection and try again.','bot');return; }
-    const raw=await r.text(); let d=null;
-    try{ d=JSON.parse(raw); }catch(e){}
-    if(r.status===401){hideT();addMsg('⚠ Session expired. Please log in again.','bot');return;}
-    if(!d){
-      hideT();
-      const why=r.status===413?'The image is too large. Try a smaller photo.'
-        :r.status===404?'The server function /api/chat was not found. Make sure api/chat.js is in your GitHub repo (inside the api folder) and redeploy.'
-        :r.status===504?'The server took too long to answer. Please try again.'
-        :'The server sent an unexpected reply (HTTP '+r.status+')'+(raw.trim()?'. It said: "'+raw.replace(/\s+/g,' ').trim().slice(0,160)+'"':' with an empty body')+'. Open Vercel > your project > Logs for the cause.';
-      addMsg('⚠ '+why,'bot');return;
-    }
-    if(d.error){hideT();addMsg('⚠ Error: '+d.error,'bot');return;}
-    if(!d.reply){hideT();addMsg('⚠ The AI sent an empty reply. Please try again.','bot');return;}
-    hideT();addMsg(d.reply,'bot');
-    if(chat){chat.history.push({role:'assistant',content:d.reply});svC();}
-  }catch(e){hideT();addMsg('⚠ Something went wrong: '+(e&&e.message?e.message:e),'bot');}
+    r=await fetch('/api/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      signal:abortCtl.signal,
+      // only the last 12 messages go to the AI (keeps you under the free token limit)
+      body:JSON.stringify({messages:chat.history.slice(-12).map(m=>({role:m.role,content:m.content})),botName,langRule:langR,image:img||null})
+    });
+  }catch(e){
+    hideT();
+    if(e&&e.name==='AbortError') say('⏹ Stopped.'); else say('⚠ Could not reach the server. Check your internet connection and try again.');
+    return false;
+  }
+  const raw=await r.text(); let d=null;
+  try{ d=JSON.parse(raw); }catch(e){}
+  hideT();
+  if(r.status===401){say('⚠ Session expired. Please log in again.');return false;}
+  if(r.status===403){
+    say('⚠ Please verify your email address first, then try again.');
+    if(window.fbAuth&&window.fbAuth.reloadUser) window.fbAuth.reloadUser().catch(()=>{});
+    return false;
+  }
+  if(!d){
+    const why=r.status===413?'The image is too large. Try a smaller photo.'
+      :r.status===404?'The server function /api/chat was not found. Make sure api/chat.js is in your GitHub repo (inside the api folder) and redeploy.'
+      :r.status===504?'The server took too long to answer. Please try again.'
+      :'The server sent an unexpected reply (HTTP '+r.status+')'+(raw.trim()?'. It said: "'+raw.replace(/\s+/g,' ').trim().slice(0,160)+'"':' with an empty body')+'. Open Vercel > your project > Logs for the cause.';
+    say('⚠ '+why);return false;
+  }
+  if(d.error){say('⚠ '+(r.status===429?'':'Error: ')+d.error);return false;}
+  if(!d.reply){say('⚠ The AI sent an empty reply. Please try again.');return false;}
+  chat.history.push({role:'assistant',content:d.reply});svC();
+  say(d.reply,{ai:true});
+  if(chat.history.length===2&&!chat.custom&&!chat.titled) aiTitle(chat);
+  return true;
+}
+
+// Give a new chat a short smart name (runs quietly in the background; if it fails the first-words name stays)
+async function aiTitle(chat){
+  try{
+    const token=window.fbAuth?await window.fbAuth.token():null;if(!token)return;
+    const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({mode:'title',messages:[{role:'user',content:chat.history[0].content},{role:'assistant',content:chat.history[1].content.slice(0,600)}]})});
+    const d=await r.json();
+    if(d&&d.title&&!chat.custom&&chats.includes(chat)){chat.title=d.title;chat.titled=true;svC();renderC();}
+  }catch(e){}
+}
+
+// REGENERATE: ask again for the last answer. The old answer stays on screen until the new one arrives.
+async function regenerate(){
+  if(busy) return;
+  const chat=chats.find(x=>x.id===curId);if(!chat||!chat.history.length) return;
+  const h=chat.history,endsWithAnswer=h[h.length-1].role==='assistant';
+  const userEntry=endsWithAnswer?h[h.length-2]:h[h.length-1];
+  if(!userEntry||userEntry.role!=='user') return;
+  let img=null;
+  if(userEntry.img){
+    if(lastImg&&lastImgChatId===chat.id) img=lastImg;
+    else{ addMsg('⚠ Please attach the image again to regenerate this answer.','bot'); return; }
+  }
+  stopSpeak();
+  const old=endsWithAnswer?h.pop():null; // take the old answer out of what the AI sees
+  const ai=mEl.querySelectorAll('.mw.bot[data-ai="1"]');
+  const oldEl=(endsWithAnswer&&ai.length)?ai[ai.length-1]:null;
+  const ok=await requestReply(chat,userEntry.content,img);
+  if(ok){ if(oldEl&&oldEl.isConnected) oldEl.remove(); refreshRegen(); }
+  else if(old){ chat.history.push(old); svC(); } // it failed: keep the previous answer
 }
 
 // IMAGE
@@ -635,6 +877,19 @@ function cpC(){navigator.clipboard.writeText(document.getElementById('cta').valu
 // SETTINGS
 function saveName(){botName=document.getElementById('bnIn').value||'R-Mind';localStorage.setItem('rm-n',botName);document.getElementById('ttl').innerText=botName.toUpperCase();}
 function clearAll(){if(!confirm('Delete all chats?'))return;chats=[];curId=null;svC();renderC();showWlc();}
+async function deleteAccount(){
+  if(!window.fbAuth||!curUser) return;
+  const pw=document.getElementById('delPw').value;
+  if(curUser.isPw&&!pw){setMsg('derr','Enter your password to confirm.');return;}
+  if(!confirm('Delete your account permanently? Your chats on this device will be erased too. This cannot be undone.')) return;
+  const uid=curUser.uid;setMsg('derr','');
+  try{
+    await window.fbAuth.deleteAccount(pw);
+    localStorage.removeItem('rm-c-'+uid);
+    document.getElementById('delPw').value='';
+    // Firebase now reports "logged out", and the app returns to the login screen by itself
+  }catch(e){ setMsg('derr',authMsg(e)); }
+}
 
 // SIDEBAR
 function togSB(){const sb=document.getElementById('sb');const ov=document.getElementById('ov');if(window.innerWidth<=640){const open=sb.classList.contains('mob-open');if(open){sb.classList.remove('mob-open');ov.classList.remove('on');}else{sb.classList.add('mob-open');ov.classList.add('on');}}else{sb.classList.toggle('desk-off');}}
@@ -643,7 +898,8 @@ function closeSB(){document.getElementById('sb').classList.remove('mob-open');do
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword,
-         signInWithPopup, signInWithRedirect, GoogleAuthProvider, sendPasswordResetEmail, signOut }
+         signInWithPopup, signInWithRedirect, GoogleAuthProvider, EmailAuthProvider, sendPasswordResetEmail,
+         sendEmailVerification, reauthenticateWithCredential, reauthenticateWithPopup, deleteUser, signOut }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 // ════════════════════════════════════════════════════════
@@ -666,7 +922,11 @@ if (!configured) {
   const auth = getAuth(initializeApp(firebaseConfig));
   window.fbAuth = {
     login:  (e, p) => signInWithEmailAndPassword(auth, e, p),
-    signup: (e, p) => createUserWithEmailAndPassword(auth, e, p),
+    signup: async (e, p) => {
+      const cred = await createUserWithEmailAndPassword(auth, e, p);
+      try { await sendEmailVerification(cred.user); } catch (err) { /* the user can press "Resend" on the verify screen */ }
+      return cred;
+    },
     google: async () => {
       const provider = new GoogleAuthProvider();
       try { return await signInWithPopup(auth, provider); }
@@ -678,7 +938,23 @@ if (!configured) {
     },
     reset:  (e) => sendPasswordResetEmail(auth, e),
     logout: () => signOut(auth),
-    token:  async () => (auth.currentUser ? auth.currentUser.getIdToken() : null)
+    token:  async () => (auth.currentUser ? auth.currentUser.getIdToken() : null),
+    sendVerify: () => sendEmailVerification(auth.currentUser),
+    reloadUser: async () => {
+      const u = auth.currentUser;
+      await u.reload();
+      await u.getIdToken(true); // refresh the login token so it carries the "verified" flag
+      window.onAuthChanged(u);
+      return u.emailVerified;
+    },
+    deleteAccount: async (password) => {
+      const user = auth.currentUser;
+      const hasPassword = user.providerData.some(p => p.providerId === "password");
+      // Firebase only deletes an account after a fresh sign-in, so confirm identity first
+      if (hasPassword) await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+      else await reauthenticateWithPopup(user, new GoogleAuthProvider());
+      await deleteUser(user);
+    }
   };
   onAuthStateChanged(auth, (user) => window.onAuthChanged(user));
 }
